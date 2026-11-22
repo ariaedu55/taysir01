@@ -157,3 +157,52 @@ Toutes les images utilisées par le site (`public/assets/images/`, 35,6 Mo en We
    - pages publiques, formulaires et connexion à la base ;
    - les sites existants répondent toujours comme avant.
 7. **`bin/deploy.sh`** : variables pour le binaire PHP et le service PHP-FPM, afin de convenir à Webuzo. Le changement est envoyé sur GitHub.
+
+### Résultat (22 novembre 2026)
+
+Le site est en ligne : **https://taysir.goo-bridge.com**.
+
+| Élément | Valeur |
+| --- | --- |
+| Code | `/home/jomas/taysir`, clone de `main` (utilisateur `jomas`) |
+| Racine web | `/home/jomas/taysir/public` |
+| PHP | 8.4.28, PHP-FPM `/usr/local/apps/php84/var/fpm-jomas.sock` (exécuté par `jomas`) |
+| Base | MariaDB 10.11, base et compte `jomas_taysir`, mot de passe aléatoire dans `config/database.local.php` uniquement |
+| Configuration | `config/{app,database,mail}.local.php`, en 640, `jomas:jomas` |
+| Virtual host | `/usr/local/apps/nginx/etc/conf.d/taysir.goo-bridge.com.conf`, copie de `deploy/nginx-goo-bridge.conf` |
+| Certificat | Let's Encrypt via `acme.sh` (root), dans `/etc/ssl/taysir/`. Valable jusqu'au 20 février 2027, renouvelé par la tâche cron d'acme.sh, qui recharge Nginx |
+| Droits | racine du site en 711 ; `app`, `config`, `storage`, `.git`… en 750 ; seul `public/` est lisible par Nginx (`nobody`) |
+
+**Ce qui a été fait :**
+- **Base** : 6 migrations appliquées, 81 articles chargés.
+- **Administrateur** : pas encore créé. C'est à faire par vous, avec votre propre mot de passe.
+- **E-mails** : pilote `log`. Ils sont mis en file sans être envoyés tant que les identifiants SMTP ne sont pas fournis.
+
+**Vérifications :**
+- **DNS** : `taysir.goo-bridge.com` → `62.171.190.193`, chez Google et chez Cloudflare.
+- **Redirection** : HTTP renvoie vers HTTPS (301).
+- **Pages** : 20 pages publiques en 200 en HTTPS ; une page inconnue renvoie 404 ; `/mon-espace/` et `/admin/` redirigent vers la connexion.
+- **Base lue** : 39 fiches métiers, 81 publications du blog, la fiche « Médecin ».
+- **Images** : aucune image cassée sur l'accueil ; l'affichage est vérifié dans le navigateur.
+- **Protections** : `.htaccess`, `.user.ini`, `.env` et `.git/config` sont refusés (403), et `config/` ou `storage/` ne sont pas accessibles. Des robots sondaient déjà ces fichiers quelques minutes après la mise en ligne, et ont été bloqués.
+- **En-têtes** :
+  - cookie de session `secure`, `HttpOnly`, `SameSite=Lax` ;
+  - pages en `no-store` ;
+  - HSTS, nosniff et SAMEORIGIN ;
+  - CSS compressé en gzip, avec un cache d'une semaine.
+- **Sites existants** : sugar-paper.com, sesam-tech.com, infra.goo-bridge.com, colobanes.com et e.foutapoidslourds.com répondent 200. samapiece.com n'a plus d'enregistrement DNS, et son journal est arrêté depuis le 19 novembre : c'était déjà le cas avant cette intervention. Le serveur le sert toujours (200 par l'IP).
+
+**Mettre à jour le site**, en root sur le VPS :
+```bash
+bash /home/jomas/taysir/bin/deploy-goo-bridge.sh
+```
+
+**Créer le compte administrateur**, sur le VPS :
+```bash
+cd /home/jomas/taysir
+sudo -u jomas /usr/local/apps/php84/bin/php bin/create-admin.php
+```
+
+**Activer l'envoi des e-mails** : compléter `config/mail.local.php` à partir de `config/mail.local.example.php` (SMTP). Ajouter ensuite la tâche planifiée `bin/send-mails.php`, toutes les minutes, pour l'utilisateur `jomas` (depuis Webuzo, onglet « Cron Jobs »).
+
+Le domaine n'apparaît pas dans le panneau Webuzo, car il a été configuré sans clé d'API. Il ne faut pas le recréer dans Webuzo : le virtual host ferait doublon.
