@@ -106,3 +106,23 @@ Ces éléments ne sont pas dans le dépôt :
 | 9 anciens PNG (logos, drapeaux) | remplacés par leur version WebP |
 
 Toutes les images utilisées par le site (`public/assets/images/`, 35,6 Mo en WebP) sont versionnées : elles sont statiques et nécessaires au fonctionnement.
+
+## Résultat (22 novembre 2026)
+
+- **Premier commit** `82e699d` envoyé sur `main` : 944 fichiers, 37,4 Mo, dont 688 images WebP. Aucun fichier de plus de 1 Mo.
+- **Ajouts pour le déploiement** :
+  - `README.md` ;
+  - `deploy/nginx.conf` et `deploy/crontab` ;
+  - `bin/deploy.sh` ;
+  - `database/seeds/articles.json`, avec 81 articles (59 publiés, 22 archivés) ;
+  - un `.gitkeep` dans chaque dossier de `storage/` ;
+  - `.gitattributes` complété (LF et fichiers binaires).
+- **Audit avant envoi** :
+  - aucun `config/*.local.php`, aucune session, aucun document client, aucun export ni journal ;
+  - aucun mot de passe ni jeton ;
+  - les seules adresses e-mail sont publiques : agence, universités, entreprises des offres d'emploi.
+- **Vérification par un clonage neuf depuis GitHub** :
+  - 944 fichiers, 688 WebP et aucun PNG ou JPEG ;
+  - dossiers `storage/` présents et vides, aucune configuration locale ;
+  - `bin/deploy.sh` en fins de ligne LF ;
+  - 40 Mo hors `.git`.
