@@ -12,10 +12,18 @@
         const plane = route.querySelector('.route-plane');
         const counter = journey.querySelector('[data-journey-count]');
         const counterBox = counter.closest('.hud-count');
+        const hudTrack = journey.querySelector('.hud-track');
+        const hudFill = journey.querySelector('.hud-fill');
+        const hudPlane = journey.querySelector('.hud-plane');
         let shown = 1;
         let stations = [];
         let samples = [];
         let routeHeight = 0;
+        // Mesures mises en cache (fluidité, docs/accueil-parcours.md) : au scroll, seul window.scrollY est lu,
+        // sans aucune lecture de mise en page ; elles sont recalculées au redimensionnement et quand la page change de hauteur.
+        let routeTop = 0;
+        let hudWidth = 0;
+        let lastActive = -1;
 
         const setCount = (value) => {
             if (value === shown) {
@@ -71,8 +79,14 @@
             const segments = Math.max(1, Math.ceil(length / 8));
             samples = Array.from({ length: segments + 1 }, (_, i) => guide.getPointAtLength(length * i / segments));
             plane.classList.add('is-positioned');
-            requestFrame();
+            measure();
         };
+
+        function measure() {
+            routeTop = route.getBoundingClientRect().top + window.scrollY;
+            hudWidth = hudTrack ? hudTrack.clientWidth : 0;
+            requestFrame();
+        }
 
         addScrollTask((viewport) => {
             if (samples.length < 2) {
@@ -80,7 +94,7 @@
             }
             const target = reduceMotion.matches
                 ? routeHeight
-                : viewport * .55 - route.getBoundingClientRect().top;
+                : viewport * .55 - (routeTop - window.scrollY);
             const y = Math.max(samples[0].y, Math.min(target, samples[samples.length - 1].y));
             let low = 0;
             let high = samples.length - 1;
@@ -102,21 +116,40 @@
             plane.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) rotate(${angle}rad)`;
 
             const progress = (low + ratio) / (samples.length - 1);
-            route.style.setProperty('--route-offset', (1 - progress).toFixed(4));
-            journey.style.setProperty('--jp', progress.toFixed(4));
+            // Écritures ciblées : tracé, barre et petit avion uniquement (aucune variable héritée par toute la section).
+            trace.style.strokeDashoffset = (1 - progress).toFixed(4);
+            if (hudFill) {
+                hudFill.style.transform = `scaleX(${progress.toFixed(4)})`;
+            }
+            if (hudPlane) {
+                hudPlane.style.transform = `translate3d(${(progress * hudWidth).toFixed(1)}px, 0, 0) translate(-50%, -50%)`;
+            }
 
+            // Les classes ne changent que lorsque le nombre d'étapes atteintes change.
             let active = 0;
-            steps.forEach((step, index) => {
-                const reached = target >= stations[index];
-                step.classList.toggle('is-active', reached);
-                active += reached ? 1 : 0;
-            });
+            while (active < stations.length && target >= stations[active]) {
+                active++;
+            }
+            if (active !== lastActive) {
+                lastActive = active;
+                steps.forEach((step, index) => step.classList.toggle('is-active', index < active));
+            }
             setCount(Math.max(1, active));
         });
 
         const routeObserver = new ResizeObserver(buildRoute);
         routeObserver.observe(route);
         steps.forEach((step) => routeObserver.observe(step));
+        // La position de la route change quand le contenu au-dessus change de hauteur (images, polices).
+        new ResizeObserver(measure).observe(document.body);
+        window.addEventListener('load', () => {
+            measure();
+            // Photos des cartes chargées et décodées à l'avance : leur décodage à l'arrivée de chaque carte coûtait une image.
+            journey.querySelectorAll('img[loading="lazy"]').forEach((img) => {
+                img.loading = 'eager';
+                img.decode?.().catch(() => {});
+            });
+        }, { once: true });
         reduceMotion.addEventListener('change', requestFrame);
     }
 })();

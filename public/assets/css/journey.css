@@ -1,9 +1,10 @@
 /* ---------- Parcours en étapes : plan de vol (docs/accueil-parcours.md) ----------
    Fond clair à quadrillage de points (motif SVG, pas de dégradé), nuages qui dérivent, tableau de bord collant,
-   route centrale qui se dessine au scroll, cartes d'embarquement en zigzag. --jp : progression (journey.js). */
-.journey { --jp: 0; --bounce: cubic-bezier(.34, 1.56, .64, 1); position: relative; isolation: isolate; overflow: clip; padding-block: clamp(5rem, 10vw, 8.5rem); background-color: var(--surface); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ccircle cx='2' cy='2' r='1.15' fill='%23041b51' fill-opacity='.1'/%3E%3C/svg%3E"); color: var(--ink); }
+   route centrale qui se dessine au scroll, cartes d'embarquement en zigzag. journey.js écrit la progression directement sur le tracé, la barre et les avions (transform, stroke-dashoffset) :
+   aucune variable héritée ni propriété de mise en page n’est modifiée au scroll (docs/accueil-parcours.md). */
+.journey { --bounce: cubic-bezier(.34, 1.56, .64, 1); position: relative; isolation: isolate; overflow: clip; padding-block: clamp(5rem, 10vw, 8.5rem); background-color: var(--surface); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ccircle cx='2' cy='2' r='1.15' fill='%23041b51' fill-opacity='.1'/%3E%3C/svg%3E"); color: var(--ink); }
 .journey-cloud { position: absolute; z-index: -1; width: clamp(9rem, 16vw, 15rem); color: white; pointer-events: none; }
-.journey-cloud svg { display: block; width: 100%; height: auto; fill: currentColor; filter: drop-shadow(0 18px 30px #00000014); animation: cloud-drift 26s ease-in-out infinite alternate; }
+.journey-cloud svg { display: block; width: 100%; height: auto; fill: currentColor; filter: drop-shadow(0 18px 30px #00000014); animation: cloud-drift 26s ease-in-out infinite alternate; will-change: transform; }
 .cloud-1 { top: 5%; left: -2%; }
 .cloud-2 { top: 40%; right: -3%; width: clamp(7rem, 12vw, 11rem); }
 .cloud-2 svg { animation-duration: 32s; animation-delay: -8s; }
@@ -19,17 +20,15 @@
 /* Tableau de bord collant : départ, piste, arrivée, compteur */
 .journey-hud-zone { position: relative; margin-top: clamp(2.5rem, 5vw, 4rem); }
 .journey-hud { position: sticky; top: calc(var(--header-h) + 1.4rem); z-index: 5; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: clamp(1rem, 2.5vw, 2rem); max-width: 54rem; margin: 0 auto clamp(2.5rem, 5vw, 4rem); padding: .85rem clamp(1.1rem, 2.5vw, 1.7rem); border: 1px solid #ffffffd9; border-radius: 100vmax; background: #fffffff0; box-shadow: 0 24px 60px #0000001a; }
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-    .journey-hud { background: #ffffffc7; backdrop-filter: blur(18px) saturate(170%); -webkit-backdrop-filter: blur(18px) saturate(170%); }
-}
+/* Pas de backdrop-filter : un flou recalculé à chaque image du scroll provoquait des saccades (fond presque opaque à la place). */
 .hud-city { display: grid; line-height: 1.15; }
 .hud-city small, .hud-count small { color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 .hud-city strong { font-family: var(--font-display); font-size: 1.45rem; font-weight: 400; letter-spacing: .05em; }
 .hud-city span { color: var(--muted); font-size: .78rem; }
 .hud-city.is-end { text-align: right; }
 .hud-track { position: relative; height: 0; margin-inline: 1rem; border-top: 2px dashed #00000033; }
-.hud-fill { position: absolute; top: -2px; left: 0; width: calc(var(--jp) * 100%); height: 2px; border-radius: 2px; background: var(--accent); }
-.hud-plane { position: absolute; top: -1px; left: calc(var(--jp) * 100%); width: 2.8rem; height: 1.2rem; object-fit: contain; filter: drop-shadow(0 2px 2px #0005); transform: translate(-50%, -50%); }
+.hud-fill { position: absolute; top: -2px; left: 0; width: 100%; height: 2px; border-radius: 2px; background: var(--accent); transform: scaleX(0); transform-origin: 0 50%; will-change: transform; }
+.hud-plane { position: absolute; top: -1px; left: 0; will-change: transform; width: 2.8rem; height: 1.2rem; object-fit: contain; filter: drop-shadow(0 2px 2px #0005); transform: translate(-50%, -50%); }
 .hud-count { display: grid; padding-left: clamp(1rem, 2vw, 1.6rem); border-left: 1px solid var(--line); line-height: 1.1; }
 .hud-count strong { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; }
 .hud-count em { margin-left: .15rem; color: var(--muted); font-family: var(--font-body); font-size: .85rem; font-style: normal; }
@@ -42,8 +41,8 @@
 .route-line { position: absolute; inset: 0; pointer-events: none; }
 .route-map { display: block; width: 100%; height: 100%; overflow: visible; fill: none; stroke-linecap: round; }
 .route-map-guide { stroke: #827773; stroke-opacity: .48; stroke-width: 2; stroke-dasharray: 2 8; }
-.route-map-progress { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 1 1; stroke-dashoffset: var(--route-offset, 1); }
-.journey .route-plane { position: absolute; z-index: 3; top: 0; left: 0; width: clamp(3.75rem, 6.5vw, 5.8rem); aspect-ratio: 1; object-fit: contain; visibility: hidden; filter: drop-shadow(0 7px 5px #2224); }
+.route-map-progress { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.journey .route-plane { position: absolute; z-index: 3; top: 0; left: 0; will-change: transform; width: clamp(3.75rem, 6.5vw, 5.8rem); aspect-ratio: 1; object-fit: contain; visibility: hidden; filter: drop-shadow(0 7px 5px #2224); }
 .journey .route-plane.is-positioned { visibility: visible; }
 @keyframes radar { from { opacity: 1; transform: scale(.8); } to { opacity: 0; transform: scale(1.9); } }
 
@@ -80,11 +79,11 @@
 .journey-step.is-left .pass::before { right: calc(-1 * var(--route-connector)); }
 .journey-step.is-right .pass::before { left: calc(-1 * var(--route-connector)); }
 .journey-step.is-active .pass::before { border-color: var(--accent); }
-.js .pass[data-reveal] { transition: opacity .9s var(--ease-out), transform 1.1s var(--ease-out), filter .9s var(--ease-out), translate .5s var(--ease-out), border-color .5s, box-shadow .5s; }
-.js .journey-step.is-left .pass[data-reveal]:not(.is-in, :focus-visible) { transform: translateX(-110px) rotate(-5deg) scale(.92); filter: blur(8px); }
-.js .journey-step.is-right .pass[data-reveal]:not(.is-in, :focus-visible) { transform: translateX(110px) rotate(5deg) scale(.92); filter: blur(8px); }
+.js .pass[data-reveal] { transition: opacity .9s var(--ease-out), transform 1.1s var(--ease-out), translate .5s var(--ease-out), border-color .5s, box-shadow .5s; }
+.js .journey-step.is-left .pass[data-reveal]:not(.is-in, :focus-visible) { transform: translateX(-110px) rotate(-5deg) scale(.92); }
+.js .journey-step.is-right .pass[data-reveal]:not(.is-in, :focus-visible) { transform: translateX(110px) rotate(5deg) scale(.92); }
 .pass:hover { translate: 0 -6px; text-decoration: none; }
-.js .journey .pass[data-reveal]:focus-visible { opacity: 1; transform: none; filter: none; transition: none; }
+.js .journey .pass[data-reveal]:focus-visible { opacity: 1; transform: none; transition: none; }
 .pass:focus-visible { outline-offset: 5px; border-radius: 1.4rem; }
 .journey-step.is-active .pass { border-color: #f1151538; box-shadow: 0 30px 70px #0000001f; }
 .pass-content { grid-area: copy; min-width: 0; padding: var(--pass-pad) var(--pass-pad) 0; }

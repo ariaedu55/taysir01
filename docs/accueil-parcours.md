@@ -126,3 +126,66 @@ Partager le parcours de vol de l’accueil avec les fiches qui affichent la gril
 - L’accueil, les 12 fiches pays et les 8 fiches d’universités utilisent la même vue `app/Views/partials/services.php`. Les fiches gardent leur texte d’introduction contextualisé et l’ancre `#accompagnement`. L’accueil conserve `#etapes-titre`.
 - Les styles et l’animation résident dans `public/assets/css/journey.css` et `public/assets/js/journey.js`. Les pages qui affichent le parcours chargent ces fichiers. Les six illustrations, les deux avions et les liens vers les services restent communs. Les classes du pied des escales sont propres au parcours pour préserver l’affichage des cartes d’embarquement de l’annuaire et des suggestions.
 - Vérification HTTP réussie sur les 21 adresses. Sur la fiche Tunisie à 1 440 px, la jauge reste visible et le compteur est revenu de 03 à 01 en remontant. À 390 px, les six cartes suivent le rail à gauche sans débordement et la carte Admission ouvre le formulaire local au clavier. Le parcours a aussi été contrôlé sur la fiche UCAD à 768 px et sur l’accueil. Les contrôles de syntaxe PHP et JavaScript passent.
+
+## Fluidité du parcours au scroll (22 novembre 2026)
+
+Demande : les animations de la section « parcours » (route, avion, cartes, tableau de bord) ont des saccades ; il faut les optimiser pour une fluidité maximale.
+
+### Mesure avant
+
+- **Méthode** : défilement automatique de 14 px par image sur toute la section, à 1440 × 900, sur un écran à 90 Hz (11 ms par image). Deux passages.
+- **Résultat** :
+  - moyenne de 12,8 à 14,3 ms par image ;
+  - 37 à 51 images sur 244 dépassent 20 ms, et jusqu'à 10 dépassent 33 ms ;
+  - pire image : 56 ms.
+
+### Causes trouvées (journey.js, journey.css)
+
+1. **Variables CSS** : `--jp` et `--route-offset` sont écrites à chaque image sur la section et sur la route. Ces variables s'héritent, donc le navigateur recalcule les styles de toutes les cartes à chaque image.
+2. **Barre du tableau de bord** : le remplissage (`width`) et le petit avion (`left`) bougent par propriétés de mise en page, ce qui provoque un recalcul de mise en page à chaque image.
+3. **Fond flouté** : le tableau de bord collant a un `backdrop-filter: blur(18px) saturate(170%)`, recalculé à chaque image puisque le contenu défile dessous.
+4. **Apparition des cartes** : elle anime un `filter: blur(8px)` sur de grandes cartes, ce qui les redessine entièrement pendant la transition.
+5. **Lecture de mise en page** : `getBoundingClientRect()` est lu à chaque image dans la boucle de scroll, après des écritures de style, ce qui force une mise en page synchrone.
+6. **Calques** : l'avion de la route et les nuages ont une ombre (`filter`) sans calque de composition déclaré.
+
+### Plan
+
+- **Variables** : n'écrire que sur les éléments qui les utilisent.
+  - Le tracé rouge reçoit son `stroke-dashoffset` directement.
+  - La barre du tableau de bord passe à `transform: scaleX()`, et son avion à `translateX()`, positionnés en pixels.
+- **Lecture de mise en page** : la position de la route est mise en cache (recalculée au redimensionnement et quand la page change de hauteur). Au scroll, seul `scrollY` est lu.
+- **Classes** : on ne touche aux classes des étapes que lorsque l'étape active change.
+- **Tableau de bord** : fond blanc presque opaque à la place du flou, même rendu visuel.
+- **Apparition des cartes** : uniquement opacité et transformation, sans flou.
+- **Calques** : `will-change: transform` sur l'avion, le petit avion du tableau de bord et les nuages.
+- **Mesure après**, dans les mêmes conditions.
+
+### Résultat (22 novembre 2026)
+
+Fichiers modifiés :
+- `public/assets/js/journey.js` :
+  - position de la route et largeur de la barre mises en cache, recalculées par `ResizeObserver` sur la route, les étapes et `body`, et au chargement ;
+  - au scroll, `stroke-dashoffset` est écrit sur le tracé, `scaleX()` sur la barre et `translate3d()` sur le petit avion ;
+  - les classes `is-active` ne sont touchées que lorsque l'étape atteinte change ;
+  - les 8 photos des cartes sont chargées et décodées après le chargement de la page.
+- `public/assets/css/journey.css` :
+  - plus de `--jp` ni de `--route-offset` ;
+  - `.hud-fill` et `.hud-plane` en `transform` ;
+  - plus de `backdrop-filter` sur le tableau de bord, dont le fond `#fffffff0` reste presque opaque ;
+  - cartes qui apparaissent sans `filter: blur` ;
+  - `will-change: transform` sur l'avion de la route, le petit avion du tableau de bord et les nuages ;
+  - 105 règles, toutes lues.
+
+Le rendu est inchangé : barre rouge, petit avion, tracé, stations, tampons « étape validée », cartes en zigzag.
+
+**Mesure après**, mêmes conditions (1440 × 900, écran à 90 Hz, 14 px par image, 244 images par passage) :
+
+| | Avant | Après |
+| --- | --- | --- |
+| Moyenne par image | 12,8 à 14,3 ms | **11,2 ms** (90 images/s) |
+| 95e centile | 22,3 ms | **11,2 ms** |
+| Images de plus de 20 ms | 37 à 51 | **1** (sur trois passages) |
+| Images de plus de 33 ms | 1 à 10 | **0** |
+| Pire image | 56 ms | 22 ms |
+
+Le même parcours est utilisé sur les fiches de service : il profite des mêmes corrections.
