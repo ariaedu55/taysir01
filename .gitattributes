@@ -1,0 +1,17 @@
+# Fins de ligne LF partout (le VPS est sous Linux), y compris les scripts shell.
+* text=auto eol=lf
+*.sh text eol=lf
+
+# Fichiers binaires : jamais de conversion ni de diff texte.
+*.webp binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary

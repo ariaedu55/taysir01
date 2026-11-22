@@ -1,0 +1,47 @@
+# Configuration privée de chaque environnement
+/config/*.local.php
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# État du site, fichiers téléversés et exports WordPress
+/storage/**/*
+!/storage/**/
+!/storage/**/.gitkeep
+!/storage/.htaccess
+/storage/exports/
+
+# Sauvegardes, journaux et fichiers d’éditeur
+*.sql
+!/database/migrations/*.sql
+*.sql.gz
+*.log
+*.bak
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+/.idea/
+/.vscode/
+/.codex/
+/.agents/
+/.aws/
+
+# Anciens PNG remplacés par leur version WebP (docs/optimisation-images.md),
+# illisibles sous Windows (droits d’un autre outil) : à supprimer à la main.
+/public/assets/images/brand/logo-navy.png
+/public/assets/images/brand/logo-white.png
+/public/assets/images/destinations/ca.png
+/public/assets/images/destinations/fr.png
+/public/assets/images/destinations/gb.png
+/public/assets/images/destinations/ma.png
+/public/assets/images/destinations/sn.png
+/public/assets/images/destinations/tn.png
+/public/assets/images/destinations/tr.png
+
+# Configuration serveur propre au VPS (copiée depuis deploy/)
+/deploy/*.local

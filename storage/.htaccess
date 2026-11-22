@@ -1,0 +1,3 @@
+# Données privées (sessions, documents des clients, export WordPress) : jamais servies par Apache.
+# En production, seule la racine public/ doit être exposée ; ce fichier protège aussi l'installation WAMP.
+Require all denied

@@ -1,0 +1,5 @@
+# Tâches planifiées du site (voir docs/deploiement-vps.md).
+# Installation, avec l'utilisateur du site : crontab -u www-data deploy/crontab
+#
+# Toutes les minutes : envoi des e-mails en file d'attente (mail_outbox) et nouvelles tentatives.
+* * * * * php /var/www/taysir/bin/send-mails.php >> /var/www/taysir/storage/logs/send-mails.log 2>&1

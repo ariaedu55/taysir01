@@ -1,0 +1,135 @@
+/* Campus et écoles supérieures. La photo d’illustration ouvre la fiche, le média d’origine l’accompagne. */
+.institution-hero {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    min-height: clamp(34rem, 80svh, 51rem);
+    overflow: hidden;
+    background: #292625;
+    color: #fff;
+}
+.institution-hero--catalogue { min-height: clamp(29rem, 66svh, 42rem); }
+.institution-hero-media { position: absolute; z-index: -2; inset: -5% 0; }
+.institution-hero-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 38%; }
+.institution-hero::before { content: ""; position: absolute; z-index: -1; inset: 0; background: #0009; }
+.institution-hero-inner {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    gap: clamp(2.3rem, 6vh, 4rem);
+    padding-block: calc(var(--header-h) + 2.25rem) clamp(1.2rem, 3vw, 2rem);
+}
+.institution-hero-copy { display: grid; align-self: end; justify-items: center; text-align: center; }
+.institution-context {
+    display: inline-flex;
+    gap: .65rem;
+    align-items: center;
+    margin-bottom: 1.1rem;
+    font-size: .81rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+}
+.institution-context::before { content: ""; width: 1.6rem; height: 2px; background: var(--accent); }
+.institution-hero h1 {
+    max-width: 23ch;
+    font-size: clamp(2.35rem, 6vw, 5.7rem);
+    line-height: 1.08;
+    letter-spacing: -.035em;
+    text-shadow: 0 3px 24px #0008;
+}
+.institution-hero-lead {
+    max-width: 54ch;
+    margin-top: clamp(.85rem, 2vw, 1.45rem);
+    color: #fff;
+    font-size: clamp(.93rem, 1.45vw, 1.13rem);
+    text-wrap: pretty;
+}
+.institution-discover {
+    display: inline-flex;
+    align-items: center;
+    gap: .65rem;
+    min-height: 44px;
+    margin-top: .85rem;
+    font-size: .87rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+.institution-discover i {
+    display: grid;
+    width: 2.2rem;
+    height: 2.2rem;
+    place-items: center;
+    border: 1px solid #fffc;
+    border-radius: 50%;
+    transition: background .2s, color .2s;
+}
+.institution-discover i::before { content: "↓"; font-size: 1.1rem; font-style: normal; }
+.institution-discover:is(:hover, :focus-visible) i { background: #fff; color: var(--ink); }
+.institution-hero-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem 1rem;
+    padding-top: .85rem;
+    border-top: 1px solid #fff6;
+}
+.institution-hero-foot .breadcrumb { min-width: 0; overflow-wrap: anywhere; }
+.institution-hero-foot .breadcrumb ol { margin: 0; font-size: .77rem; font-weight: 600; }
+.institution-hero-foot small { font-size: .72rem; }
+
+.institution-profile, .institution-catalogue { scroll-margin-top: calc(var(--header-h) + 2rem); }
+.institution-profile {
+    display: grid;
+    grid-template-columns: minmax(0, 45rem);
+    gap: clamp(1.5rem, 6vw, 6rem);
+    align-items: start;
+    padding-block: clamp(3.5rem, 8vw, 7rem) clamp(2.4rem, 5vw, 4.5rem);
+    border-bottom: 1px solid var(--line);
+}
+.institution-profile.has-original { grid-template-columns: minmax(0, 1fr) minmax(0, .92fr); }
+.institution-profile-copy > .kicker { margin-bottom: .85rem; }
+.institution-profile h2, .institution-section-title { font-size: clamp(1.8rem, 3.4vw, 3.25rem); line-height: 1.15; letter-spacing: -.025em; }
+.institution-profile-copy > .prose {
+    max-width: 64ch;
+    margin-top: 1.15rem;
+    color: var(--muted);
+    font-size: clamp(.94rem, 1.5vw, 1.04rem);
+    line-height: 1.72;
+}
+.institution-source-link { display: inline-block; margin-top: 1.2rem; font-size: .86rem; font-weight: 700; text-underline-offset: .25em; }
+.institution-source-link span { margin-left: .3rem; }
+.institution-former { margin-top: .75rem; color: var(--muted); font-size: .9rem; }
+.institution-original { padding: .58rem; border: 1px solid var(--line); border-radius: 1.25rem; background: #fff; box-shadow: 0 18px 48px #00000011; }
+.institution-original img { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: .85rem; object-fit: contain; background: var(--surface); }
+.institution-original--school img { aspect-ratio: 16 / 11; }
+.institution-original figcaption { padding: .7rem .6rem .35rem; color: var(--muted); font-size: .75rem; }
+.institution-section-title { margin-bottom: .45rem; }
+.institution-page .country-toc { box-shadow: none; }
+.institution-page .country-toc a { grid-template-columns: minmax(0, 1fr); }
+.institution-page .country-toc a::before { display: none; }
+.institution-page .country-section summary h3 { font-size: clamp(1.05rem, 2vw, 1.32rem); }
+.institution-page .country-section .prose { padding-left: 1.25rem; }
+.institution-help-links { display: grid; justify-items: start; gap: .75rem; }
+.institution-help-links > a:not(.button) { font-weight: 650; font-size: .9rem; }
+.institution-catalogue { padding-block: clamp(2.5rem, 5vw, 4.5rem); }
+.institution-catalogue .section-head { margin-bottom: 1.5rem; }
+.js :is(.institution-page, .activity-page) :is([data-reveal]:focus-visible, [data-reveal]:focus-within) { opacity: 1; transform: none; transition: none; }
+
+@media (max-width: 48rem) {
+    .institution-profile.has-original { grid-template-columns: minmax(0, 1fr); }
+    .institution-original { max-width: 38rem; }
+}
+@media (max-width: 34rem) {
+    .institution-hero { min-height: clamp(34rem, 78svh, 40rem); }
+    .institution-hero--catalogue { min-height: clamp(29rem, 68svh, 34rem); }
+    .institution-hero-inner { gap: 1.8rem; padding-top: calc(var(--header-h) + 1.6rem); }
+    .institution-hero h1 { font-size: clamp(2rem, 8.4vw, 3rem); letter-spacing: -.024em; }
+    .institution-context { margin-bottom: .65rem; font-size: .75rem; letter-spacing: .04em; }
+    .institution-hero-lead { max-width: 36ch; }
+    .institution-hero-foot small { font-size: .66rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    html:has(.institution-page, .activity-page) { scroll-behavior: smooth; }
+    .institution-hero-media img { animation: institution-image-in 1.6s var(--ease-out) both; }
+    @keyframes institution-image-in { from { transform: scale(1.075); } to { transform: scale(1); } }
+}

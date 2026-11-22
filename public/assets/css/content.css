@@ -1,0 +1,149 @@
+/* Articles, métiers, écoles, pages d'orientation et d'aiguillage. S'appuie sur app.css et destination.css. */
+
+/* ---------- Cartes d'articles (docs/cartes-voyage.md) ----------
+   Photo encadrée dans la carte, catégorie en pastille, lien « Découvrir » avec flèche ronde ;
+   au survol : légère inclinaison 3D (app.js, --rx / --ry), zoom de la photo, flèche rouge qui pivote. */
+.article-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(17.5rem, 100%), 1fr)); gap: 1.4rem 1.2rem; margin: 0; padding: 0; list-style: none; }
+.article-cards > li { min-width: 0; }
+.article-card { display: flex; flex-direction: column; height: 100%; padding: .55rem; border: 1px solid var(--line); border-radius: 1.5rem; background: white; color: var(--ink); text-decoration: none; box-shadow: 0 14px 32px #0000000b; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px)); transition: transform .55s var(--ease-out), box-shadow .55s var(--ease-out), border-color .3s; }
+.article-card:hover, .article-card:focus-visible { --lift: -6px; border-color: #00000026; box-shadow: 0 30px 56px #0000001c; }
+.article-card-media { position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 1.1rem; background: var(--surface-2); }
+.article-card-media img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.01); transition: transform 1.3s var(--ease-out); }
+.article-card:hover .article-card-media img { transform: scale(1.08); }
+.article-card-body { display: flex; flex: 1; flex-direction: column; gap: .55rem; padding: 1rem .75rem .55rem; }
+.article-card-meta { display: inline-flex; align-self: flex-start; align-items: center; gap: .4rem; max-width: 100%; padding: .3rem .75rem; border-radius: 100vmax; background: var(--surface); color: var(--ink); font-size: .76rem; font-weight: 700; letter-spacing: .02em; }
+.article-card-meta svg { flex: none; color: var(--accent); }
+.article-card-date { color: var(--muted); font-weight: 600; }
+.article-card-title { font-family: var(--font-display); font-size: 1.28rem; font-weight: 400; line-height: 1.2; }
+.article-card-excerpt { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: .92rem; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.article-card-more { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: auto; padding-top: .9rem; border-top: 1px dashed var(--line); font-size: .88rem; font-weight: 700; }
+.article-card-arrow { display: grid; place-items: center; flex: none; width: 2.4rem; height: 2.4rem; border: 1px solid var(--line); border-radius: 50%; transition: background-color .3s, border-color .3s, color .3s, transform .5s var(--ease-out); }
+.article-card:hover .article-card-arrow, .article-card:focus-visible .article-card-arrow { border-color: var(--accent); background: var(--accent); color: white; transform: rotate(-45deg); }
+
+/* ---------- Filtre et recherche ---------- */
+.content-filter { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+.content-search { position: relative; display: block; max-width: 34rem; }
+.content-search svg { position: absolute; top: 50%; left: 1rem; color: var(--muted); transform: translateY(-50%); }
+.content-search input { width: 100%; min-height: 50px; padding: .75rem 1rem .75rem 2.8rem; border: 1px solid var(--line); border-radius: 100vmax; background: white; color: var(--ink); font: inherit; }
+.content-search input:focus { border-color: var(--ink); outline: none; box-shadow: 0 0 0 4px #00000017; }
+.content-empty { margin-top: 1rem; padding: 1.2rem 1.4rem; border: 1px dashed var(--line); border-radius: 1rem; color: var(--muted); }
+
+/* ---------- Page article ---------- */
+.has-light-header main.article-page { padding-top: calc(var(--header-h) + 2rem); }
+.article-hero { padding-block: clamp(1rem, 3vw, 2rem) clamp(1.5rem, 3vw, 2.5rem); }
+.article-hero .breadcrumb { color: var(--muted); }
+.article-hero h1 { max-width: 22ch; font-size: clamp(2.2rem, 4.6vw, 3.8rem); }
+.article-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.article-chip { border: 1px solid var(--line); background: white; }
+.article-chip.is-soft { background: #00000008; font-weight: 600; }
+.article-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem); align-items: start; gap: clamp(1.5rem, 4vw, 3.5rem); padding-bottom: clamp(3rem, 6vw, 5rem); }
+.article-main { display: grid; gap: 1.6rem; min-width: 0; }
+.article-cover { overflow: hidden; border-radius: 1.6rem; background: #eef1f6; box-shadow: 0 30px 60px #00000014; }
+.article-cover img { width: 100%; max-height: 32rem; object-fit: cover; }
+.article-archive { margin: 0; }
+.article-intro { font-size: 1.08rem; }
+.article-section { padding-top: 1.6rem; border-top: 1px solid var(--line); }
+.article-section h2 { margin-bottom: 1rem; font-size: clamp(1.5rem, 2.6vw, 2rem); }
+.article-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); gap: .7rem; margin: 0; padding: 0; list-style: none; }
+.article-gallery img { width: 100%; aspect-ratio: 4 / 3; border-radius: 1rem; object-fit: cover; }
+.article-aside { position: sticky; top: calc(var(--header-h) + 2rem); display: grid; gap: 1rem; }
+.article-aside-card { display: grid; gap: .8rem; padding: 1.5rem; border-radius: 1.4rem; }
+.article-aside-card h2 { font-size: 1.5rem; }
+.article-aside-card p:not(.kicker) { color: var(--muted); }
+.article-aside-card .kicker { margin-bottom: 0; }
+.article-aside-link { display: flex; gap: .9rem; padding: 1.1rem 1.2rem; border-radius: 1.2rem; color: var(--muted); font-size: .9rem; text-decoration: none; transition: transform .5s var(--ease-out); }
+.article-aside-link:hover { transform: translateY(-3px); }
+.article-aside-link strong { display: block; margin-bottom: .2rem; color: var(--ink); }
+.article-aside-icon, .hub-card-icon, .sector-tile-icon { display: grid; place-items: center; flex: none; width: 2.8rem; height: 2.8rem; border-radius: .85rem; background: var(--red-wash); color: var(--accent); }
+.article-related { padding-top: 0; }
+
+/* ---------- Secteurs ---------- */
+.sector-chip { margin-bottom: 1rem; border: 1px solid var(--line); background: white; }
+.sector-switch { padding-block: 1rem 2rem; }
+.sector-switch ul { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.sector-link { border: 1px solid var(--line); background: white; text-decoration: none; transition: background-color .25s, border-color .25s; }
+.sector-link:hover { background: var(--red-wash); }
+.sector-link.is-current { border-color: var(--ink); background: var(--ink); color: white; }
+.sector-opportunities { padding-top: 2rem; }
+.sector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.sector-tile { display: grid; gap: .45rem; height: 100%; padding: 1.3rem; border-radius: 1.3rem; text-decoration: none; transition: transform .5s var(--ease-out); }
+.sector-tile:hover { transform: translateY(-4px); }
+.sector-tile span:last-child { color: var(--muted); font-size: .92rem; }
+.sector-tile-icon { margin-bottom: .3rem; }
+
+/* ---------- Aiguillage (docs/cartes-voyage.md) ----------
+   Numéro « 01 » en Prata, pastille d'icône qui devient rouge, flèche ronde en bas à droite, inclinaison 3D au survol.
+   Les cartes compactes (sans icône) gardent la flèche, sans numéro. */
+.hub-cards { counter-reset: hub; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr)); gap: 1.2rem; margin: 0; padding: 0; list-style: none; }
+.hub-card { position: relative; overflow: hidden; display: grid; align-content: start; gap: .5rem; height: 100%; padding: 1.6rem 1.6rem 4.4rem; border-radius: 1.5rem; color: var(--ink); text-decoration: none; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px)); transition: transform .55s var(--ease-out), box-shadow .55s var(--ease-out), border-color .3s; }
+.hub-card::before { counter-increment: hub; content: counter(hub, decimal-leading-zero); position: absolute; top: 1.25rem; right: 1.5rem; color: #0000001f; font-family: var(--font-display); font-size: 2.6rem; line-height: 1; transition: color .4s; }
+.hub-card::after { content: "→"; position: absolute; right: 1.3rem; bottom: 1.2rem; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border: 1px solid var(--line); border-radius: 50%; font-size: 1rem; font-weight: 700; line-height: 1; transition: background-color .3s, border-color .3s, color .3s, transform .5s var(--ease-out); }
+.hub-card:hover, .hub-card:focus-visible { --lift: -6px; border-color: #00000026; box-shadow: inset 0 1px 0 #fff, 0 30px 56px #0000001f; }
+.hub-card:hover::before { color: #00000040; }
+.hub-card:hover::after, .hub-card:focus-visible::after { border-color: var(--accent); background: var(--accent); color: white; transform: rotate(-45deg); }
+.hub-card strong { font-family: var(--font-display); font-size: 1.4rem; font-weight: 400; line-height: 1.2; }
+.hub-card span:last-child { color: var(--muted); }
+.hub-card-icon { margin-bottom: .6rem; transition: background-color .35s, color .35s, transform .5s var(--ease-out); }
+.hub-card:hover .hub-card-icon { background: var(--accent); color: white; transform: rotate(-6deg) scale(1.06); }
+.hub-cards-compact { grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); }
+.hub-cards-compact .hub-card { padding: 1.2rem 3.9rem 1.2rem 1.25rem; }
+.hub-cards-compact .hub-card::before { content: none; }
+.hub-cards-compact .hub-card::after { top: 50%; bottom: auto; right: 1rem; width: 2.1rem; height: 2.1rem; margin-top: -1.05rem; }
+.hub-cards-compact .hub-card strong { font-size: 1.12rem; }
+
+/* ---------- Pages d'orientation ---------- */
+.orientation-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem); align-items: start; gap: clamp(1.5rem, 4vw, 3.5rem); padding-bottom: clamp(3rem, 6vw, 5rem); }
+.orientation-main { display: grid; gap: 1.5rem; min-width: 0; }
+.orientation-main .flash { margin: 0; }
+.orientation-intro { font-size: 1.1rem; }
+.orientation-title { margin-top: 1rem; font-size: clamp(1.5rem, 2.6vw, 2rem); }
+.orientation-aside { position: sticky; top: calc(var(--header-h) + 2rem); }
+.orientation-steps { display: grid; gap: .9rem; margin: .3rem 0 .5rem; padding: 0; list-style: none; }
+.orientation-steps li { display: flex; gap: .8rem; color: var(--muted); font-size: .92rem; }
+.orientation-steps li > span { display: grid; place-items: center; flex: none; width: 1.9rem; height: 1.9rem; border-radius: 50%; background: var(--surface-2); color: var(--ink); font-weight: 800; font-size: .85rem; }
+.orientation-steps strong { display: block; color: var(--ink); }
+
+@media (max-width: 62rem) {
+    .article-layout, .orientation-layout { grid-template-columns: 1fr; }
+    .article-aside, .orientation-aside { position: static; }
+}
+
+/* ---------- Offres et activités (docs/offres-activites.md) ---------- */
+.activity-page .service-layout { padding-top: clamp(2.2rem, 5vw, 4.2rem); scroll-margin-top: calc(var(--header-h) + 1rem); }
+.activity-page .service-main { gap: 1.6rem; }
+.activity-intro { font-size: 1.1rem; }
+.activity-section { display: grid; gap: 1rem; }
+.activity-section .orientation-title { display: flex; align-items: center; gap: .7rem; margin-top: .6rem; }
+.activity-count { display: grid; place-items: center; min-width: 2rem; height: 2rem; padding-inline: .5rem; border-radius: 100vmax; background: #0000000d; font-family: var(--font-body, inherit); font-size: .85rem; font-weight: 800; }
+.activity-section-text { margin-top: -.5rem; color: var(--muted); }
+.activity-skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: .7rem; margin: 0; padding: 0; list-style: none; }
+.activity-skills li { display: flex; align-items: center; gap: .8rem; padding: 1rem 1.1rem; border-radius: 1.1rem; font-weight: 700; }
+.activity-skills span { display: grid; place-items: center; flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--red-wash); color: var(--accent); font-size: .85rem; font-weight: 800; }
+
+.video-card { display: grid; gap: .6rem; margin: 0; }
+.video-card figcaption { color: var(--muted); font-size: .84rem; }
+.video-frame { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 1.4rem; border: 1px solid var(--line); background: var(--surface); }
+.video-frame.is-playing { background: #000; }
+.video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-play { display: flex; align-items: center; gap: 1.1rem; padding: 1rem 1.4rem; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.video-play-icon { display: grid; place-items: center; flex: none; width: 4.4rem; height: 4.4rem; border-radius: 50%; background: var(--accent); color: white; box-shadow: 0 0 0 10px #f115151a; transition: transform .45s var(--ease-out), box-shadow .45s var(--ease-out); }
+.video-play:hover .video-play-icon { transform: scale(1.07); box-shadow: 0 0 0 14px #f1151526; }
+.video-play:focus-visible { outline: 3px solid #fff; outline-offset: 4px; border-radius: 1rem; }
+.video-play-text { display: grid; gap: .2rem; }
+.video-play-text strong { font-family: var(--font-display); font-size: clamp(1.2rem, 2.4vw, 1.6rem); font-weight: 600; }
+.video-play-text span { color: var(--muted); font-size: .9rem; }
+.button-email { font-size: .88rem; overflow-wrap: anywhere; }
+
+@media (max-width: 34rem) {
+    .video-play { flex-direction: column; text-align: center; }
+    .video-play-icon { width: 3.6rem; height: 3.6rem; }
+}
+
+/* Blog : rubriques au-dessus du filtre (docs/blog.md) */
+.blog-families { margin-bottom: clamp(1.5rem, 4vw, 2.5rem); }
+@media (max-width: 40rem) {
+    .blog-families { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+    .blog-families .hub-card { gap: .2rem; padding: .9rem 1rem; border-radius: 1.1rem; }
+    .blog-families .hub-card strong { font-size: 1rem; }
+    .blog-families .hub-card span { font-size: .82rem; }
+}
