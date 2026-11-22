@@ -82,7 +82,16 @@ function redirect_to(string $path, int $status = 303): never
 /** URL d'un fichier de public/assets/. */
 function asset(string $path): string
 {
-    return Router::basePath() . '/assets/' . ltrim($path, '/');
+    $path = ltrim($path, '/');
+    $url = Router::basePath() . '/assets/' . $path;
+    // Version = date de modification du fichier : les navigateurs gardent CSS, JS et images en cache
+    // (7 à 180 jours, deploy/nginx*.conf) et reprennent la nouvelle version dès qu'un déploiement la modifie.
+    $file = BASE_PATH . '/public/assets/' . rawurldecode($path);
+    if (!str_contains($path, '?') && is_file($file)) {
+        $url .= '?v=' . filemtime($file);
+    }
+
+    return $url;
 }
 
 /**

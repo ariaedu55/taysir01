@@ -189,3 +189,10 @@ Le rendu est inchangé : barre rouge, petit avion, tracé, stations, tampons « 
 | Pire image | 56 ms | 22 ms |
 
 Le même parcours est utilisé sur les fiches de service : il profite des mêmes corrections.
+
+### Mise en ligne (22 novembre 2026)
+
+- **Déploiement** : commit `3c66088`, déployé sur https://taysir.goo-bridge.com avec `bin/deploy-goo-bridge.sh`.
+- **Cache des navigateurs** : les CSS et JS sont gardés 7 jours par les navigateurs, et les images 180 jours (`deploy/nginx-goo-bridge.conf`). Sans version dans l'adresse, un visiteur déjà venu aurait gardé l'ancien `journey.js` jusqu'à une semaine.
+- **Correction** : `asset()` (`app/Helpers/functions.php`) ajoute `?v=<date de modification>` à tout fichier qui existe. `git pull` ne réécrit que les fichiers modifiés, donc seule leur version change à chaque déploiement.
+- **Limite connue** : les images dont l'adresse est assemblée à la main dans `home.php` (dossier `$cities`, `$panoramas`, `hero-flight/`) restent sans version. Si l'une d'elles est remplacée sous le même nom, il faut la renommer.
