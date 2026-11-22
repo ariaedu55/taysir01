@@ -126,3 +126,34 @@ Toutes les images utilisées par le site (`public/assets/images/`, 35,6 Mo en We
   - dossiers `storage/` présents et vides, aucune configuration locale ;
   - `bin/deploy.sh` en fins de ligne LF ;
   - 40 Mo hors `.git`.
+
+## Déploiement sur le VPS de l'utilisateur : taysir.goo-bridge.com (22 novembre 2026)
+
+### Constat
+
+- **DNS** : `taysir.goo-bridge.com` résout bien vers `62.171.190.193`, chez Google comme chez Cloudflare.
+- **Serveur** : Ubuntu 24.04 géré par le panneau **Webuzo**.
+  - Nginx en façade sur `62.171.190.193:80/443`, Apache en arrière (`127.0.0.1:8081`).
+  - PHP-FPM par utilisateur : PHP 8.4.28 actif, avec pdo_mysql, mbstring, gd, fileinfo, openssl et curl.
+  - MariaDB 10.11.
+- **Sites existants**, gérés par l'utilisateur Webuzo `jomas` : sugar-paper.com, sesam-tech.com, samapiece.com, infra.goo-bridge.com, colobanes.com, e.foutapoidslourds.com.
+- **Virtual hosts** : `webuzoVH.conf` est régénéré par le panneau et ne doit pas être modifié à la main. Le CLI `webuzo` ne sait pas créer de domaine : il faut passer par l'API du panneau, ce qui demande une clé d'API.
+- **Précédents** : le serveur a déjà un virtual host Nginx autonome (`conf.d/sesam-tech.com.conf.disabled`) et `acme.sh` pour les certificats.
+
+### Plan
+
+1. **Code** : `/home/jomas/taysir`, cloné depuis GitHub par l'utilisateur `jomas`. La racine web est `/home/jomas/taysir/public`.
+2. **Base** : `jomas_taysir`, avec un compte dédié `jomas_taysir` et un mot de passe aléatoire écrit uniquement dans `config/database.local.php` sur le serveur. Puis les migrations et les 81 articles.
+3. **Configuration** :
+   - `app.local.php` : `url` = `https://taysir.goo-bridge.com`, `debug` = `false` ;
+   - `mail.local.php` : pilote `log` tant que les identifiants SMTP ne sont pas fournis. Les e-mails sont mis en file sans être envoyés.
+4. **Nginx** : `conf.d/taysir.goo-bridge.com.conf`, autonome et indépendant du panneau.
+   - En HTTP : seulement le défi ACME et la redirection vers HTTPS.
+   - En HTTPS : PHP 8.4 directement par la socket `fpm-jomas`, sans Apache, cache long des fichiers statiques, compression.
+   - Le cache proxy de Webuzo n'est pas utilisé, pour ne jamais servir à un visiteur la page d'un autre (espace client).
+5. **HTTPS** : certificat Let's Encrypt via `acme.sh` (méthode webroot), renouvelé automatiquement, avec rechargement de Nginx.
+6. **Vérifications** :
+   - `nginx -t` avant chaque rechargement ;
+   - pages publiques, formulaires et connexion à la base ;
+   - les sites existants répondent toujours comme avant.
+7. **`bin/deploy.sh`** : variables pour le binaire PHP et le service PHP-FPM, afin de convenir à Webuzo. Le changement est envoyé sur GitHub.
