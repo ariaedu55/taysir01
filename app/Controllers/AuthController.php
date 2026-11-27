@@ -102,11 +102,8 @@ final class AuthController extends Controller
 
         Auth::clearFailures();
         Auth::login($user);
+        \App\Services\Audit::log('connexion', 'compte', (string) $user['id'], [], (int) $user['id']);
 
-        if (in_array($user['role'], ['admin', 'conseiller'], true)) {
-            Session::forget('_intended');
-            redirect_to('/admin/');
-        }
         $this->redirectIntended();
     }
 
@@ -119,16 +116,20 @@ final class AuthController extends Controller
         }
     }
 
-    /** Retour à la page demandée avant la connexion, si elle est interne, sinon à l'espace client. */
+    /**
+     * Règle unique après connexion ou inscription (docs/gestion-plan.md §2.4) : la page demandée avant la connexion
+     * si elle est interne ET permise à ce compte, sinon /gestion/ pour l'équipe et /mon-espace/ pour un client.
+     */
     private function redirectIntended(): never
     {
-        $intended = Session::get('_intended');
+        $user = Auth::user();
+        $intended = \App\Services\Access::retourPermis($user, Session::get('_intended'));
         Session::forget('_intended');
-        if (is_string($intended) && self::isInternal($intended)) {
+        if ($intended !== null) {
             header('Location: ' . $intended, true, 303);
             exit;
         }
-        redirect_to('/mon-espace/');
+        redirect_to(\App\Services\Access::accueil($user));
     }
 
     private static function isInternal(string $path): bool

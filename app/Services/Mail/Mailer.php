@@ -19,6 +19,10 @@ final class Mailer
     public static function send(array $mail): void
     {
         $config = config('mail');
+        if (self::recette()) {
+            // Robot de recette (bin/recette.php) : aucun e-mail ne part, tout est écrit dans storage/recette/mails/
+            $config['driver'] = 'log';
+        }
         if (!filter_var($mail['recipient'], FILTER_VALIDATE_EMAIL)) {
             throw new RuntimeException('Adresse du destinataire invalide.');
         }
@@ -72,10 +76,16 @@ final class Mailer
         return $lines . "\r\n" . $body;
     }
 
+    private static function recette(): bool
+    {
+        return (require BASE_PATH . '/config/recette.php') !== null;
+    }
+
     /** Mode développement : l'e-mail complet est écrit dans storage/mails/. */
     private static function toLog(array $mail, array $headers, string $body): void
     {
-        $directory = BASE_PATH . '/storage/mails';
+        $recette = require BASE_PATH . '/config/recette.php';
+        $directory = $recette !== null ? $recette['storage'] . '/mails' : BASE_PATH . '/storage/mails';
         if (!is_dir($directory) && !mkdir($directory, 0770, true)) {
             throw new RuntimeException('Dossier storage/mails indisponible.');
         }

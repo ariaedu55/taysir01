@@ -115,6 +115,51 @@ final class ServiceRequest extends Model
         return array_map([self::class, 'decode'], static::query($sql . ' ORDER BY r.created_at DESC LIMIT 200', $params)->fetchAll());
     }
 
+    /**
+     * Liste de l'espace équipe, TOUJOURS limitée au périmètre du compte (Access::perimetre).
+     * $vue : null (tout le périmètre), « mes » (affectés à ce compte), « a-prendre » (personne à son poste).
+     */
+    public static function searchScoped(array $user, ?string $status, ?string $service, ?string $vue = null, int $limit = 200): array
+    {
+        [$scope, $params] = \App\Services\Access::perimetre($user, 'r');
+        $sql = "SELECT r.*, (SELECT COUNT(*) FROM request_documents d WHERE d.request_id = r.id) AS document_count,
+                       (SELECT GROUP_CONCAT(CONCAT(ra.poste, ':', COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'dans la file')) SEPARATOR '|')
+                        FROM request_assignments ra LEFT JOIN users u ON u.id = ra.user_id WHERE ra.request_id = r.id) AS responsables
+                FROM service_requests r WHERE {$scope}";
+        $postes = array_values(array_intersect(\App\Services\Access::postes($user), array_keys(\App\Services\Access::AFFECTATIONS)));
+        if ($vue === 'mes') {
+            $sql .= ' AND EXISTS (SELECT 1 FROM request_assignments m WHERE m.request_id = r.id AND m.user_id = ?)';
+            $params[] = (int) $user['id'];
+        } elseif ($vue === 'a-prendre' && $postes !== []) {
+            // Dans la file d'au moins un de ses postes (même règle que Access::fileSql)
+            $files = [];
+            foreach ($postes as $poste) {
+                [$file, $fileParams] = \App\Services\Access::fileSql($poste, 'r');
+                $files[] = $file;
+                array_push($params, ...$fileParams);
+            }
+            $sql .= ' AND (' . implode(' OR ', $files) . ") AND r.status NOT IN ('terminee', 'annulee')";
+        }
+        if ($status !== null && isset(self::STATUSES[$status])) {
+            $sql .= ' AND r.status = ?';
+            $params[] = $status;
+        }
+        if ($service !== null && self::service($service) !== null) {
+            $sql .= ' AND r.service = ?';
+            $params[] = $service;
+        }
+
+        return array_map([self::class, 'decode'], static::query($sql . ' ORDER BY r.updated_at DESC LIMIT ' . max(1, min(500, $limit)), $params)->fetchAll());
+    }
+
+    /** @return array<string, int> Dossiers du périmètre par statut */
+    public static function countsScoped(array $user): array
+    {
+        [$scope, $params] = \App\Services\Access::perimetre($user, 'r');
+
+        return static::query("SELECT r.status, COUNT(*) FROM service_requests r WHERE {$scope} GROUP BY r.status", $params)->fetchAll(\PDO::FETCH_KEY_PAIR);
+    }
+
     /** @return array<string, int> Nombre de demandes par statut (pour un client, ou pour toute l'agence). */
     public static function countsByStatus(?int $userId = null): array
     {

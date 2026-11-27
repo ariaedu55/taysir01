@@ -1,0 +1,121 @@
+/* ==========================================================================
+   Suivi côté client (maquette de l'espace client, docs/gestion-plan.md §12.2, docs/gestion-phase-1.md 1A ter)
+   Même système que l'espace équipe : couleur portée par des surfaces teintées et des tuiles d'icône,
+   aucune bordure colorée, aucun dégradé, texte noir, rouge d'action pour l'action principale.
+   Priorité : « Ce qu'il vous reste à faire » en haut, la prochaine action en évidence, visible sans défiler sur téléphone.
+   ========================================================================== */
+.c-space {
+    --c-bg: #f3f4f8; --c-soft: #f6f7fa; --c-hair: #e8ebf1;
+    --c-shadow: 0 1px 2px #1018280a, 0 6px 20px #1018280d;
+    --c-rdv: #2563eb; --c-rdv-bg: #e9f0ff;
+    --c-ok: #15803d; --c-ok-bg: #e3f6e9;
+    --c-ech: #c26a00; --c-ech-bg: #fff2d9;
+    --c-urg: #d42020; --c-urg-bg: #ffe9e7;
+    --c-fin: #0f8079; --c-fin-bg: #dcf4f1;
+    padding-bottom: 4rem;
+    background: var(--c-bg);
+}
+.c-wrap { width: min(100% - 2rem, 62rem); margin-inline: auto; }
+.c-mock { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .55rem; margin: 0 0 1.1rem; padding: .45rem .75rem; border-radius: .7rem; background: #fff6e3; color: #7a4b00; font-size: .76rem; font-weight: 600; }
+.c-mock a { color: inherit; }
+.c-mock a[aria-current="page"] { font-weight: 800; text-decoration: none; }
+.c-hello h1 { margin: 0; font-family: var(--font-display); font-size: clamp(1.7rem, 3.6vw, 2.4rem); font-weight: 400; line-height: 1.15; }
+.c-hello p { margin: .25rem 0 1.1rem; color: var(--muted); font-size: .9rem; }
+.c-muted { color: var(--muted); font-size: .84rem; }
+
+/* Ce qu'il vous reste à faire */
+.c-todo { margin-bottom: 1.2rem; padding: 1.1rem 1.2rem; border-radius: 1.15rem; background: white; box-shadow: var(--c-shadow); }
+.c-todo h2 { display: flex; align-items: center; gap: .55rem; margin: 0 0 .85rem; font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; }
+.c-count { display: inline-grid; place-items: center; min-width: 1.55rem; height: 1.55rem; padding: 0 .4rem; border-radius: 100vmax; background: var(--action); color: white; font-family: var(--font-body); font-size: .76rem; font-weight: 700; }
+.c-todo ul { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
+.c-todo-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .85rem; padding: .8rem .9rem; border-radius: .9rem; background: var(--c-soft); transition: background-color .3s; }
+.c-todo-item strong { display: block; font-size: .92rem; }
+.c-todo-item p { margin: .12rem 0 0; color: var(--muted); font-size: .83rem; line-height: 1.45; }
+.c-todo-icon { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: .75rem; background: var(--c-rdv-bg); color: var(--c-rdv); }
+/* Prochaine action : surface rouge pâle et pastille, sans contour */
+.c-todo-item.is-next { background: #fff0ee; }
+.c-todo-item.is-next .c-todo-icon { background: var(--action); color: white; }
+.c-next { display: inline-flex; width: fit-content; margin-bottom: .3rem; padding: .12rem .55rem; border-radius: 100vmax; background: var(--action); color: white; font-size: .64rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.c-todo-item.is-refused .c-todo-icon { background: var(--c-urg-bg); color: var(--c-urg); }
+.c-todo-item.is-next.is-refused .c-todo-icon { background: var(--action); color: white; }
+.c-todo-item:has([data-g-demo="paiement"]) .c-todo-icon { background: var(--c-fin-bg); color: var(--c-fin); }
+.c-todo-item.is-waiting { background: var(--c-soft); }
+.c-todo-item.is-waiting .c-todo-icon { background: white; color: var(--muted); }
+.c-todo-item.is-sent { background: var(--c-ok-bg); }
+.c-todo-item.is-sent .c-todo-icon { background: var(--c-ok); color: white; }
+.c-status, .c-sent { display: inline-flex; align-items: center; gap: .35rem; width: fit-content; padding: .2rem .6rem; border-radius: 100vmax; background: white; color: var(--ink); font-size: .76rem; font-weight: 600; white-space: nowrap; }
+
+/* Boutons : rouge d'action plein ; secondaires blancs sur filet neutre ; aucun contour coloré */
+.c-btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 2.6rem; padding: .45rem 1.05rem; border: 0; border-radius: 100vmax; background: var(--action); color: white; font: inherit; font-size: .86rem; font-weight: 700; white-space: nowrap; cursor: pointer; box-shadow: 0 4px 12px #ce0f0f2e; transition: background-color .2s, transform .2s; }
+.c-btn:hover { background: #a50b0b; }
+.c-btn:active { transform: translateY(1px); }
+.c-btn-light, .c-btn-outline { background: white; color: var(--ink); box-shadow: inset 0 0 0 1px var(--c-hair); }
+.c-btn-light:hover, .c-btn-outline:hover { background: var(--c-hair); }
+.c-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.c-ask { display: none; }
+
+/* Dossier et colonne latérale */
+.c-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+.c-side { display: grid; gap: 1.2rem; }
+.c-card { padding: 1.1rem 1.2rem; border-radius: 1.15rem; background: white; box-shadow: var(--c-shadow); }
+.c-card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .3rem 1rem; margin-bottom: .9rem; }
+.c-card-head h2, .c-small-title { margin: 0; font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; }
+.c-ref { padding: .1rem .5rem; border-radius: .4rem; background: var(--c-soft); color: var(--muted); font-size: .74rem; font-weight: 600; }
+.c-steps { margin: 0; padding: 0; list-style: none; }
+.c-steps li { position: relative; display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); column-gap: .75rem; padding-bottom: 1rem; color: var(--muted); }
+.c-steps li::before { content: ""; position: absolute; left: .72rem; top: 1.6rem; bottom: 0; width: 3px; border-radius: 3px; background: var(--c-hair); }
+.c-steps li:last-child { padding-bottom: 0; }
+.c-steps li:last-child::before { display: none; }
+.c-steps li > span { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--c-soft); color: white; font-size: .72rem; box-shadow: 0 0 0 3px white; }
+.c-steps li.is-done, .c-steps li.is-current { color: var(--ink); }
+.c-steps li.is-done > span { background: var(--c-ok); }
+.c-steps li.is-done::before { background: var(--c-ok); }
+.c-steps li.is-current > span { background: var(--action); }
+.c-steps strong { align-self: center; font-weight: 600; }
+.c-steps li.is-current strong { font-weight: 700; }
+.c-steps small { grid-column: 2; color: var(--muted); font-size: .76rem; }
+.c-rdv { display: grid; gap: .1rem; margin: .5rem 0 .85rem; padding: .7rem .85rem; border-radius: .8rem; background: var(--c-rdv-bg); }
+
+/* Notifications (gestion.js) */
+.c-space .g-toasts { position: fixed; left: 50%; bottom: 1.2rem; z-index: 95; display: grid; gap: .5rem; transform: translateX(-50%); }
+.c-space .g-toast { display: flex; align-items: center; gap: .65rem; min-width: 17rem; max-width: calc(100vw - 2rem); padding: .7rem .95rem; border-radius: .85rem; background: var(--ink); color: white; font-size: .84rem; box-shadow: 0 18px 48px #10182824; }
+.c-space .g-toast-ok { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; flex: none; border-radius: 50%; background: var(--c-ok); }
+
+/* Assistant : jamais au-dessus d'une action du client */
+body:has(.c-space) .assistant-greeting { display: none; }
+body:has(.c-space) .assistant-launcher { padding-right: .25rem; }
+body:has(.c-space) .assistant-launcher-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 74rem) {
+    /* Sous 74rem le bouton flottant toucherait le contenu : l'assistant s'ouvre depuis « Votre interlocuteur » */
+    body:has(.c-space) .assistant-launcher { display: none; }
+    .c-ask { display: inline-flex; }
+}
+
+/* Téléphone : resserré */
+@media (max-width: 48rem) {
+    .c-space { padding-bottom: 2rem; }
+    .c-wrap { width: min(100% - 1.5rem, 62rem); }
+    .c-mock { margin-bottom: .8rem; padding: .35rem .6rem; font-size: .68rem; }
+    .c-hello h1 { font-size: 1.5rem; }
+    .c-hello p { margin-bottom: .75rem; font-size: .78rem; }
+    .c-grid, .c-side { grid-template-columns: minmax(0, 1fr); gap: .7rem; }
+    .c-todo, .c-card { padding: .8rem; border-radius: .95rem; }
+    .c-todo { margin-bottom: .7rem; }
+    .c-todo h2 { margin-bottom: .6rem; font-size: 1.05rem; }
+    .c-count { min-width: 1.35rem; height: 1.35rem; font-size: .68rem; }
+    .c-todo ul { gap: .45rem; }
+    .c-todo-item { grid-template-columns: auto minmax(0, 1fr); gap: .55rem .65rem; padding: .65rem; border-radius: .8rem; }
+    .c-todo-item strong { font-size: .84rem; }
+    .c-todo-item p { font-size: .74rem; }
+    .c-todo-icon { width: 1.9rem; height: 1.9rem; border-radius: .55rem; }
+    .c-todo-icon .g-icon { width: 16px; height: 16px; }
+    .c-todo-item > .c-btn, .c-todo-item > .c-status, .c-todo-item > .c-sent { grid-column: 1 / -1; }
+    .c-todo-item > .c-btn { width: 100%; }
+    .c-btn { min-height: 2.4rem; font-size: .8rem; }
+    .c-card-head h2, .c-small-title { font-size: 1rem; }
+    .c-steps li { padding-bottom: .75rem; font-size: .82rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .c-todo-item, .c-btn { transition: none; }
+}

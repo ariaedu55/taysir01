@@ -18,6 +18,8 @@
 # Sauvegardes, journaux et fichiers d’éditeur
 *.sql
 !/database/migrations/*.sql
+# Retours arrière des migrations (docs/gestion-phase-1.md, 1B bis)
+!/database/rollback/*.sql
 *.sql.gz
 *.log
 *.bak
@@ -45,3 +47,7 @@ Thumbs.db
 
 # Configuration serveur propre au VPS (copiée depuis deploy/)
 /deploy/*.local
+
+# Ancienne application GAOV (encore en ligne) : inventaires et sécurité, gardés en local, jamais dans ce dépôt public
+/docs/gaov-*.md
+/docs/gestion-admin-existant.md

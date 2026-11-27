@@ -8,6 +8,19 @@ $messages = [
 ];
 $code = (int) ($code ?? 500);
 [$title, $message] = $messages[$code] ?? $messages[500];
+// Espace équipe : refus expliqué (périmètre, journal) et retour vers Ma journée plutôt que vers le site public
+$retour = ['/', 'Retour à l’accueil'];
+try {
+    $compte = \App\Core\Auth::user();
+} catch (\Throwable) {
+    $compte = null;
+}
+if ($code === 403 && \App\Services\Access::isStaff($compte)) {
+    $message = 'Cette page ou ce dossier n’est pas dans le périmètre de votre poste. La tentative est inscrite au journal d’audit ; si vous en avez besoin, demandez une affectation à l’administrateur.';
+    $retour = ['/gestion/', 'Retour à Ma journée'];
+} elseif ($code === 403 && $compte !== null) {
+    $retour = ['/mon-espace/', 'Retour à mon espace'];
+}
 ?>
 <!doctype html>
 <html lang="fr">
@@ -29,7 +42,7 @@ $code = (int) ($code ?? 500);
         <p class="code"><?= $code ?></p>
         <h1><?= e($title) ?></h1>
         <p><?= e($message) ?></p>
-        <a href="<?= e(url('/')) ?>">Retour à l’accueil</a>
+        <a href="<?= e(url($retour[0])) ?>"><?= e($retour[1]) ?></a>
     </main>
 </body>
 </html>

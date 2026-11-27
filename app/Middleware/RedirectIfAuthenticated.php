@@ -12,7 +12,7 @@ final class RedirectIfAuthenticated
     public function handle(?string $parameter = null): void
     {
         if (Auth::check()) {
-            redirect_to(Auth::hasRole('admin', 'conseiller') ? '/admin/' : '/mon-espace/');
+            redirect_to(\App\Services\Access::accueil(Auth::user()));
         }
     }
 }

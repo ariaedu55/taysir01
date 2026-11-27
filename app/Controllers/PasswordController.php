@@ -99,7 +99,8 @@ final class PasswordController extends Controller
         }
 
         Session::flash('_success', 'Votre mot de passe est modifié. Vous êtes connecté(e).');
-        redirect_to(in_array($user['role'], ['admin', 'conseiller'], true) ? '/admin/' : '/mon-espace/');
+        // Règle unique (docs/gestion-plan.md §2.4) : /gestion/ pour l'équipe, /mon-espace/ pour un client
+        redirect_to(\App\Services\Access::accueil($user));
     }
 
     /** @return array{0: array, 1: array} Jeton de la session encore valable et compte concerné */

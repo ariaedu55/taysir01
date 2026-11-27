@@ -84,7 +84,7 @@ final class Notifier
                     'Destination' => (string) $request['destination'],
                     'Statut' => ServiceRequest::statusLabel($request['status']),
                 ], static fn ($value) => $value !== ''),
-                'button' => ['Ouvrir la demande', absolute_url('/admin/demandes/' . $request['reference'] . '/')],
+                'button' => ['Ouvrir la demande', absolute_url('/gestion/dossiers/' . $request['reference'] . '/')],
                 'audience' => 'agence',
             ], $request['email'], $request['reference']);
     }
@@ -140,7 +140,7 @@ final class Notifier
             ], static fn ($value) => $value !== ''),
             'quote' => $request['message'] ?: null,
             'quoteBy' => 'Précisions du client',
-            'button' => ['Ouvrir la demande', absolute_url('/admin/demandes/' . $request['reference'] . '/')],
+            'button' => ['Ouvrir la demande', absolute_url('/gestion/dossiers/' . $request['reference'] . '/')],
         ], $request['email'], $request['reference']);
     }
 
@@ -180,7 +180,7 @@ final class Notifier
             'quote' => $message !== '' ? $message : null,
             'quoteBy' => 'Message du client',
             'details' => $documentNames !== [] ? ['Documents ajoutés' => implode("\n", $documentNames)] : [],
-            'button' => ['Ouvrir la demande', absolute_url('/admin/demandes/' . $request['reference'] . '/')],
+            'button' => ['Ouvrir la demande', absolute_url('/gestion/dossiers/' . $request['reference'] . '/')],
         ], $request['email'], $request['reference']);
     }
 

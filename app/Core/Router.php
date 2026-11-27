@@ -24,6 +24,8 @@ final class Router
         'auth' => \App\Middleware\Authenticate::class,
         'guest' => \App\Middleware\RedirectIfAuthenticated::class,
         'role' => \App\Middleware\RequireRole::class,
+        // « acces:dossiers » : module de l'espace équipe, selon la matrice des postes (refus journalisé)
+        'acces' => \App\Middleware\RequireAccess::class,
     ];
 
     private static ?self $current = null;

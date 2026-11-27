@@ -19,7 +19,8 @@ final class User extends Model
         'particulier' => 'Particulier (voyage, travail…)',
     ];
 
-    public const ROLES = ['client', 'conseiller', 'admin'];
+    /** Client, puis les 8 postes de l'équipe (App\Services\Access::POSTES). */
+    public const ROLES = ['client', 'admin', 'secretaire', 'prospection', 'commerciale', 'conseiller', 'orientation', 'traitement', 'comptable'];
 
     public const PASSWORD_MIN = 8;
 
@@ -59,14 +60,14 @@ final class User extends Model
 
     /* ---------- Équipe (docs/comptes-equipe.md) ---------- */
 
-    /** Conseillers et administrateurs, actifs d'abord. */
+    /** Membres de l'équipe (les 8 postes), actifs d'abord. */
     public static function staff(bool $activeOnly = false): array
     {
         return static::query(
-            "SELECT id, first_name, last_name, email, phone, role, active, last_login_at, created_at,
-                    (SELECT COUNT(*) FROM service_requests r WHERE r.assigned_to = users.id AND r.status NOT IN ('terminee', 'annulee')) AS open_requests
-             FROM users WHERE role IN ('conseiller', 'admin')" . ($activeOnly ? ' AND active = 1' : '') . '
-             ORDER BY active DESC, role, first_name'
+            "SELECT id, first_name, last_name, email, phone, role, agency_id, active, last_login_at, created_at,
+                    (SELECT COUNT(*) FROM request_assignments a JOIN service_requests r ON r.id = a.request_id WHERE a.user_id = users.id AND r.status NOT IN ('terminee', 'annulee')) AS open_requests
+             FROM users WHERE role <> 'client'" . ($activeOnly ? ' AND active = 1' : '') . "
+             ORDER BY active DESC, FIELD(role, 'admin', 'secretaire', 'prospection', 'commerciale', 'conseiller', 'orientation', 'traitement', 'comptable'), first_name"
         )->fetchAll();
     }
 
@@ -74,8 +75,8 @@ final class User extends Model
     public static function createStaff(array $data, string $role, ?int $invitedBy): array
     {
         static::query(
-            'INSERT INTO users (first_name, last_name, email, phone, profile, role, invited_by, password_hash, consent_at)
-             VALUES (?, ?, ?, ?, \'particulier\', ?, ?, ?, NOW())',
+            'INSERT INTO users (first_name, last_name, email, phone, profile, role, agency_id, invited_by, password_hash, consent_at)
+             VALUES (?, ?, ?, ?, \'particulier\', ?, (SELECT id FROM agencies WHERE is_head = 1 LIMIT 1), ?, ?, NOW())',
             [
                 $data['first_name'], $data['last_name'], self::normalizeEmail($data['email']),
                 $data['phone'] !== '' ? $data['phone'] : null, $role, $invitedBy,

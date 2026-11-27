@@ -19,7 +19,10 @@ final class DocumentStorage
 
     public static function directory(): string
     {
-        return BASE_PATH . '/storage/uploads/requests';
+        // Recette isolée : pièces propres à l'exécution (config/recette.php), jamais celles de l'instance
+        $recette = require BASE_PATH . '/config/recette.php';
+
+        return $recette !== null ? $recette['storage'] . '/uploads' : BASE_PATH . '/storage/uploads/requests';
     }
 
     /**

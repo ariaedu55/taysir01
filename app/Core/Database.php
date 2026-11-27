@@ -15,6 +15,14 @@ final class Database
     {
         if (self::$pdo === null) {
             $c = config('database');
+            // Recette isolée (config/recette.php) : base dédiée et, en option, compte SQL dédié
+            $recette = require BASE_PATH . '/config/recette.php';
+            if ($recette !== null) {
+                $c['name'] = $recette['base'];
+                if ($recette['user'] !== null) {
+                    [$c['user'], $c['password']] = [$recette['user'], $recette['password']];
+                }
+            }
             $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $c['host'], $c['port'], $c['name'], $c['charset']);
             self::$pdo = new PDO($dsn, $c['user'], $c['password'], [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

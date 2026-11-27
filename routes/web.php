@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 use App\Controllers\ActivityController;
 use App\Controllers\AgencyController;
-use App\Controllers\Admin\MessageController as AdminMessages;
-use App\Controllers\Admin\MailController as AdminMails;
-use App\Controllers\Admin\TeamController as AdminTeam;
-use App\Controllers\Admin\DashboardController as AdminDashboard;
-use App\Controllers\Admin\RequestController as AdminRequests;
 use App\Controllers\AppointmentController;
 use App\Controllers\AuthController;
 use App\Controllers\Client\DashboardController as ClientDashboard;
 use App\Controllers\Client\RequestController as ClientRequests;
 use App\Controllers\DestinationController;
+use App\Controllers\Gestion\DossierController as GestionDossiers;
+use App\Controllers\Gestion\EquipeController as GestionEquipe;
+use App\Controllers\Gestion\JourneeController as GestionJournee;
+use App\Controllers\Gestion\MaquetteController as GestionMaquette;
+use App\Controllers\Gestion\MessageController as GestionMessages;
+use App\Controllers\Gestion\RendezVousController as GestionRendezVous;
 use App\Controllers\HomeController;
 use App\Controllers\ArticleController;
 use App\Controllers\OrientationController;
@@ -102,6 +103,12 @@ foreach (ActivityController::pages() as $activity) {
 $router->get('/about-us', [AgencyController::class, 'about']);
 $router->get('/contact', [AgencyController::class, 'contact']);
 $router->post('/contact', [AgencyController::class, 'sendMessage']);
+// Maquette navigable de l'espace équipe : locale uniquement (GESTION_MAQUETTE=1), docs/gestion-phase-1.md
+$router->get('/gestion/maquette', [GestionMaquette::class, 'journee']);
+$router->get('/gestion/maquette/dossiers', [GestionMaquette::class, 'dossiers']);
+$router->get('/gestion/maquette/dossiers/{reference}', [GestionMaquette::class, 'dossier']);
+$router->get('/gestion/maquette/prospects', [GestionMaquette::class, 'prospects']);
+$router->get('/gestion/maquette/client', [GestionMaquette::class, 'client']);
 $router->get('/faq', [AgencyController::class, 'faq']);
 $router->get('/nos-regles-et-valeurs', [AgencyController::class, 'rules']);
 $router->get('/terms-conditions', [AgencyController::class, 'privacy']);
@@ -110,24 +117,48 @@ $router->get('/avis-etudiants', static fn () => (new AgencyController())->testim
 $router->redirect('/partir-a-letranger', '/destination/');
 $router->redirect('/journal-ecoles', '/formations-profesionnelles/');
 
-// Back-office : conseillers et administrateurs.
-$staff = ['auth', 'role:admin,conseiller'];
-$router->get('/admin', [AdminDashboard::class, 'index'], $staff);
-$router->get('/admin/demandes', [AdminRequests::class, 'index'], $staff);
-$router->get('/admin/demandes/{reference}', [AdminRequests::class, 'show'], $staff);
-$router->post('/admin/demandes/{reference}', [AdminRequests::class, 'update'], $staff);
-$router->post('/admin/demandes/{reference}/attribution', [AdminRequests::class, 'assign'], $staff);
-$router->get('/admin/demandes/{reference}/documents/{id}', [AdminRequests::class, 'document'], $staff);
-$router->get('/admin/rendez-vous', [AdminRequests::class, 'appointments'], $staff);
-$router->post('/admin/rendez-vous/{reference}', [AdminRequests::class, 'updateAppointment'], $staff);
-$router->get('/admin/messages', [AdminMessages::class, 'index'], $staff);
-$router->post('/admin/messages/{id}', [AdminMessages::class, 'update'], $staff);
-$router->get('/admin/e-mails', [AdminMails::class, 'index'], $staff);
-$router->post('/admin/e-mails/{id}', [AdminMails::class, 'retry'], $staff);
-// Équipe : administrateurs uniquement (voir docs/comptes-equipe.md).
-$router->get('/admin/equipe', [AdminTeam::class, 'index'], ['auth', 'role:admin']);
-$router->post('/admin/equipe', [AdminTeam::class, 'store'], ['auth', 'role:admin']);
-$router->post('/admin/equipe/{id}', [AdminTeam::class, 'update'], ['auth', 'role:admin']);
+// Espace équipe (docs/gestion-phase-1.md, 1B) : chaque module est réservé aux postes de la matrice (middleware « acces »),
+// et chaque dossier ou pièce est revérifié par le filtre de périmètre dans le contrôleur.
+$router->get('/gestion', [GestionJournee::class, 'index'], ['auth', 'acces:gestion']);
+$dossiers = ['auth', 'acces:dossiers'];
+$router->get('/gestion/dossiers', [GestionDossiers::class, 'index'], $dossiers);
+$router->get('/gestion/dossiers/{reference}', [GestionDossiers::class, 'show'], $dossiers);
+$router->post('/gestion/dossiers/{reference}', [GestionDossiers::class, 'update'], $dossiers);
+$router->post('/gestion/dossiers/{reference}/attribution', [GestionDossiers::class, 'assign'], $dossiers);
+$router->get('/gestion/dossiers/{reference}/pieces/{id}', [GestionDossiers::class, 'document'], $dossiers);
+$router->get('/gestion/rendez-vous', [GestionRendezVous::class, 'index'], ['auth', 'acces:rendez-vous']);
+$router->post('/gestion/rendez-vous/{reference}', [GestionRendezVous::class, 'update'], ['auth', 'acces:rendez-vous']);
+$router->get('/gestion/messages', [GestionMessages::class, 'index'], ['auth', 'acces:messages']);
+$router->post('/gestion/messages/{id}', [GestionMessages::class, 'update'], ['auth', 'acces:messages']);
+$router->get('/gestion/e-mails', [GestionMessages::class, 'mails'], ['auth', 'acces:e-mails']);
+$router->post('/gestion/e-mails/{id}', [GestionMessages::class, 'retry'], ['auth', 'acces:e-mails']);
+$router->get('/gestion/equipe', [GestionEquipe::class, 'index'], ['auth', 'acces:equipe']);
+$router->post('/gestion/equipe', [GestionEquipe::class, 'store'], ['auth', 'acces:equipe']);
+$router->post('/gestion/equipe/{id}', [GestionEquipe::class, 'update'], ['auth', 'acces:equipe']);
+$router->get('/gestion/journal', [GestionEquipe::class, 'journal'], ['auth', 'acces:journal']);
+
+// Transition /admin/ → /gestion/ (docs/gestion-plan.md §2.3) : GET en 302 temporaire avec les filtres conservés
+// (301 après validation de la phase 1) ; POST de compatibilité : même traitement, mêmes droits, même jeton CSRF.
+$versGestion = static function (string $to): never {
+    $query = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_QUERY);
+    header('Location: ' . url($to) . ($query !== '' ? '?' . $query : ''), true, 302);
+    exit;
+};
+$router->get('/admin', static fn () => $versGestion('/gestion/'));
+$router->get('/admin/demandes', static fn () => $versGestion('/gestion/dossiers/'));
+$router->get('/admin/demandes/{reference}', static fn (string $reference) => $versGestion('/gestion/dossiers/' . rawurlencode($reference) . '/'));
+$router->get('/admin/demandes/{reference}/documents/{id}', static fn (string $reference, string $id) => $versGestion('/gestion/dossiers/' . rawurlencode($reference) . '/pieces/' . rawurlencode($id) . '/'));
+$router->get('/admin/rendez-vous', static fn () => $versGestion('/gestion/rendez-vous/'));
+$router->get('/admin/messages', static fn () => $versGestion('/gestion/messages/'));
+$router->get('/admin/e-mails', static fn () => $versGestion('/gestion/e-mails/'));
+$router->get('/admin/equipe', static fn () => $versGestion('/gestion/equipe/'));
+$router->post('/admin/demandes/{reference}', [GestionDossiers::class, 'update'], $dossiers);
+$router->post('/admin/demandes/{reference}/attribution', [GestionDossiers::class, 'assign'], $dossiers);
+$router->post('/admin/rendez-vous/{reference}', [GestionRendezVous::class, 'update'], ['auth', 'acces:rendez-vous']);
+$router->post('/admin/messages/{id}', [GestionMessages::class, 'update'], ['auth', 'acces:messages']);
+$router->post('/admin/e-mails/{id}', [GestionMessages::class, 'retry'], ['auth', 'acces:e-mails']);
+$router->post('/admin/equipe', [GestionEquipe::class, 'store'], ['auth', 'acces:equipe']);
+$router->post('/admin/equipe/{id}', [GestionEquipe::class, 'update'], ['auth', 'acces:equipe']);
 
 // Articles (fiches métiers, écoles, offres…) à la racine, comme sur WordPress (/medecin/, /unipro-d/).
 // Déclarés en dernier : une page existante n'est jamais masquée par un article de même adresse.

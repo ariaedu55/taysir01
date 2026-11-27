@@ -2,7 +2,7 @@
 /** @var bool $heroHeader En-tête posé sur un bandeau sombre au chargement */
 $navigation = config('site.navigation');
 $account = \App\Core\Auth::user();
-$accountUrl = $account === null ? url('/connexion/') : url(in_array($account['role'], ['admin', 'conseiller'], true) ? '/admin/' : '/mon-espace/');
+$accountUrl = url($account === null ? '/connexion/' : \App\Services\Access::accueil($account));
 $accountLabel = $account === null ? 'Connexion' : 'Mon espace';
 $chevron = '<svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 ?>
