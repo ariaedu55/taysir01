@@ -2,7 +2,14 @@
 
 ## Qualification du 28/11/2026
 
-Le VPS est à la migration 010 sur MariaDB 10.11.15. Les extensions PHP CLI et les droits d’écriture du compte du site ont été vérifiés. La copie de qualification reprend le schéma et les volumes de production avec des valeurs fictives. Elle a passé 20 contrôles, dont la restauration, les migrations 011 à 024, le retour à 010 et la reprise. La sauvegarde de bascule reste à prendre au moment de la publication. Voir le [compte rendu](gestion-phase-9.md#9c--préparation-et-vérifications-du-28112026).
+Avant la bascule, le VPS était à la migration 010 sur MariaDB 10.11.15. Les extensions PHP CLI et les droits d’écriture du compte du site ont été vérifiés. La copie de qualification reprend le schéma et les volumes de production avec des valeurs fictives. Elle a passé 20 contrôles, dont la restauration, les migrations 011 à 024, le retour à 010 et la reprise. Voir le [compte rendu](gestion-phase-9.md#9c--préparation-et-vérifications-du-28112026).
+
+## Mise en service du 28/11/2026
+
+- Révision `4922becb20a9b6f8229e035dbc4dc21124c9d829` publiée sur GitHub `main` et déployée sur `taysir.goo-bridge.com` depuis `403c4dd`. Une branche de publication dédiée rassemble le lot de gestion et les interfaces de phase 10. Les travaux locaux sur l’assistant restent dans la branche de travail d’origine.
+- Sauvegardes chiffrées de la base, des pièces et de la configuration enregistrées dans `/root/taysir-bascule-20261128-DAacsx2Y`, sur le VPS. Les flux déchiffrés étaient lisibles et les empreintes des archives correspondent. L’emplacement de la clé est consigné dans ce répertoire protégé.
+- Les 14 migrations 011 à 024 sont appliquées. Le site Taysir a été placé temporairement en maintenance. Nginx a repris sa configuration d’origine après les vérifications HTTPS. La page publique, la connexion, les destinations, la réservation et le blog répondent en 200. Les espaces privés redirigent vers la connexion et la maquette est inaccessible publiquement.
+- Le pilote e-mail est encore `log`. L’agence doit désigner le premier administrateur et fournir la liste de l’équipe. Un essai SMTP réussi précède les invitations et l’activation des tâches planifiées.
 
 ## Avant la fenêtre de mise à jour
 

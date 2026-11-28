@@ -38,6 +38,11 @@ $sections = [
         </div>
     </header>
     <?= $slot ?>
-    <footer class="client-footer"><div class="client-wrap"><a href="<?= e(url('/')) ?>">Retour au site</a><a href="<?= e(url('/contact/')) ?>">Contacter l’agence</a></div></footer>
+    <footer class="client-footer">
+        <div class="client-wrap">
+            <span class="client-footer-brand">Taysir Orientation Voyage · votre espace personnel</span>
+            <nav aria-label="Liens utiles"><a href="<?= e(url('/')) ?>">Retour au site</a><a href="<?= e(url('/contact/')) ?>">Contacter l’agence</a><a href="<?= e(url('/rendez_vous_orientation/')) ?>">Prendre rendez-vous</a></nav>
+        </div>
+    </footer>
 </body>
 </html>

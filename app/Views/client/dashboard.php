@@ -50,7 +50,15 @@ $stats = [
     <div class="portal-detail">
         <section class="account glass" aria-labelledby="demandes-titre">
             <div class="client-section-head"><h2 id="demandes-titre">Mes dossiers</h2><?php if ($requests !== []): ?><a href="<?= e(url($list)) ?>">Tout voir</a><?php endif; ?></div>
-            <?php if ($requests === []): ?><p class="portal-empty">Vous n’avez pas encore de dossier.</p><?php else: ?>
+            <?php if ($requests === []): ?>
+                <p class="client-empty-lead">Vous n’avez pas encore de dossier. Voici comment Taysir vous accompagne :</p>
+                <ol class="client-steps">
+                    <li class="client-tone-blue"><span class="client-icon"><?= gestion_icone('route', 18) ?></span><strong>1. Votre demande</strong><span>Choisissez le service : admission, logement, visa, prise en charge.</span></li>
+                    <li class="client-tone-amber"><span class="client-icon"><?= gestion_icone('upload', 18) ?></span><strong>2. Vos pièces</strong><span>Déposez vos documents en ligne, en toute confidentialité.</span></li>
+                    <li class="client-tone-green"><span class="client-icon"><?= gestion_icone('check', 18) ?></span><strong>3. Le suivi</strong><span>Suivez chaque étape ici ; votre conseiller vous tient informé.</span></li>
+                </ol>
+                <?php if ($target !== $list . '#nouvelle-titre'): ?><p><a class="button primary" href="<?= e(url($list . '#nouvelle-titre')) ?>">Faire une demande <?= gestion_icone('arrow', 16) ?></a></p><?php endif; ?>
+            <?php else: ?>
                 <ul class="request-list">
                     <?php foreach ($requests as $request): ?>
                         <li><a class="request-row" href="<?= e(url($list . $request['reference'] . '/')) ?>">

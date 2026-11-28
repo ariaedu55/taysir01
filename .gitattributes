@@ -1,6 +1,8 @@
 # Fins de ligne LF partout (le VPS est sous Linux), y compris les scripts shell.
 * text=auto eol=lf
 *.sh text eol=lf
+# Scripts Windows : CRLF (lancement local sous WAMP)
+*.bat text eol=crlf
 
 # Fichiers binaires : jamais de conversion ni de diff texte.
 *.webp binary

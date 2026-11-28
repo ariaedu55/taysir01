@@ -388,7 +388,7 @@ kbd { padding: .05rem .38rem; border-radius: .35rem; background: white; color: v
 /* ---------- Tablette : la barre latérale devient un tiroir ---------- */
 @media (max-width: 62rem) {
     .g-shell, .g-shell.is-collapsed { grid-template-columns: minmax(0, 1fr); }
-    .g-sidebar { position: fixed; inset: 0 auto 0 0; width: min(18rem, 86vw); transform: translateX(-105%); transition: transform .32s var(--ease-out); box-shadow: var(--g-shadow-lg); }
+    .g-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 45; width: min(18rem, 86vw); transform: translateX(-105%); transition: transform .32s var(--ease-out); box-shadow: var(--g-shadow-lg); }
     .g-shell.is-drawer .g-sidebar { transform: none; }
     .g-shell.is-drawer .g-scrim { opacity: 1; visibility: visible; }
     .g-brand .g-collapse { display: none; }

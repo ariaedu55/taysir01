@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Controllers\ActivityController;
 use App\Controllers\AgencyController;
 use App\Controllers\AppointmentController;
+use App\Controllers\AssistantController;
 use App\Controllers\AuthController;
 use App\Controllers\Client\DashboardController as ClientDashboard;
 use App\Controllers\Client\RequestController as ClientRequests;
@@ -130,6 +131,8 @@ $router->get('/gestion/maquette/client', [GestionMaquette::class, 'client']);
 $router->get('/gestion/maquette/agenda', [GestionMaquette::class, 'agenda']);
 $router->get('/gestion/maquette/personnes', [GestionMaquette::class, 'personne']);
 $router->get('/gestion/maquette/rendez-vous', [GestionMaquette::class, 'reservation']);
+// Assistant IA : réponse en flux (docs/assistant-ia.md)
+$router->post('/assistant', [AssistantController::class, 'message']);
 $router->get('/faq', [AgencyController::class, 'faq']);
 $router->get('/nos-regles-et-valeurs', [AgencyController::class, 'rules']);
 $router->get('/terms-conditions', [AgencyController::class, 'privacy']);

@@ -190,8 +190,8 @@ body:has(.c-space) .assistant-launcher-label { position: absolute; width: 1px; h
 .client-workspace {
     --font-display: var(--font-body);
     --client-bg: #f5f7fc;
-    --client-shadow: 0 1px 2px #1323450b, 0 12px 30px #13234509;
-    color: #182744;
+    --client-shadow: 0 1px 2px #0a0a0a0d, 0 12px 30px #0a0a0a0a;
+    color: var(--ink);
     background: var(--client-bg);
 }
 .client-workspace .client-wrap { width: min(76rem, calc(100% - 3rem)); margin-inline: auto; }
@@ -206,18 +206,22 @@ body:has(.c-space) .assistant-launcher-label { position: absolute; width: 1px; h
 .client-signout:hover, .client-nav a:hover { background: #f0f3fa; }
 .client-nav { display: flex; gap: .25rem; }
 .client-nav a[aria-current="page"] { color: var(--btn-base); background: #eaf1ff; }
-.client-footer { padding-block: .5rem 2rem; color: #40516e; font-size: .82rem; }
-.client-footer .client-wrap { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+.client-footer { margin-top: auto; padding-block: 1.1rem 1.4rem; background: white; color: var(--muted); font-size: .82rem; box-shadow: 0 -1px 0 #0a0a0a0d; }
+.client-footer .client-wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1.25rem; }
+.client-footer nav { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; }
+.client-footer a { color: var(--ink-soft); font-weight: 600; text-decoration: none; }
+.client-footer a:hover { color: var(--btn-base); }
+.client-footer-brand { font-weight: 600; }
 .client-intro { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: .6rem; padding-block: clamp(1.2rem, 4vw, 2.6rem) .95rem; }
-.client-workspace .dashboard h1 { color: #142441; font: 700 clamp(1.55rem, 4vw, 2.5rem)/1.14 var(--font-body); letter-spacing: -.035em; overflow-wrap: anywhere; }
-.client-label { margin: 0 0 .35rem; color: #415575; font-size: .72rem; font-weight: 700; letter-spacing: .035em; }
-.client-profile { padding: .25rem .65rem; border-radius: 10rem; background: white; color: #415575; font-size: .78rem; font-weight: 600; }
+.client-workspace .dashboard h1 { color: var(--ink); font: 700 clamp(1.55rem, 4vw, 2.5rem)/1.14 var(--font-body); letter-spacing: -.035em; overflow-wrap: anywhere; }
+.client-label { margin: 0 0 .35rem; color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .035em; }
+.client-profile { padding: .25rem .65rem; border-radius: 10rem; background: white; color: var(--muted); font-size: .78rem; font-weight: 600; }
 .client-tone-blue { --client-tone: #245bd3; --client-tint: #eaf1ff; }
 .client-tone-amber { --client-tone: #9b5307; --client-tint: #fff0d7; }
 .client-tone-green { --client-tone: #127054; --client-tint: #e5f6ef; }
 .client-next { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: clamp(.75rem, 2vw, 1.3rem); margin-bottom: 1rem; padding: clamp(.95rem, 2.4vw, 1.65rem); border-radius: 1.2rem; background: var(--client-tint); }
-.client-next h2 { color: #142441; font: 700 clamp(1.06rem, 2.3vw, 1.55rem)/1.22 var(--font-body); overflow-wrap: anywhere; }
-.client-next-copy > p:last-child:not(:first-child) { margin: .35rem 0 0; color: #354966; font-size: .83rem; }
+.client-next h2 { color: var(--ink); font: 700 clamp(1.06rem, 2.3vw, 1.55rem)/1.22 var(--font-body); overflow-wrap: anywhere; }
+.client-next-copy > p:last-child:not(:first-child) { margin: .35rem 0 0; color: var(--ink-soft); font-size: .83rem; }
 .client-icon { display: inline-grid; place-items: center; width: 2.35rem; height: 2.35rem; flex: none; border-radius: .7rem; background: var(--client-tone); color: white; }
 .client-next .client-icon { width: 3rem; height: 3rem; }
 .client-workspace .button { min-height: 2.65rem; padding: .45rem .85rem; border-radius: .7rem; font: 600 .84rem/1.35 var(--font-body); }
@@ -228,15 +232,15 @@ body:has(.c-space) .assistant-launcher-label { position: absolute; width: 1px; h
 .client-workspace .client-danger { min-height: 2.3rem; margin-bottom: .4rem; background: #ffe9e7; color: #962019; }
 .client-workspace .client-danger:hover { background: #ffdcd8; }
 .client-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin: 0 0 1rem; }
-.client-metric { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .35rem .6rem; min-width: 0; padding: .85rem; border-radius: .9rem; background: var(--client-tint); color: #172641; text-decoration: none; }
+.client-metric { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .35rem .6rem; min-width: 0; padding: .85rem; border-radius: .9rem; background: var(--client-tint); color: var(--ink); text-decoration: none; }
 .client-metric strong { font-size: clamp(1.15rem, 3vw, 1.65rem); font-variant-numeric: tabular-nums; }
 .client-metric > span:last-child { grid-column: 1 / -1; font-size: .77rem; font-weight: 600; line-height: 1.25; }
 .client-metric:hover { box-shadow: var(--client-shadow); }
 .client-workspace .account { min-width: 0; padding: clamp(.85rem, 2vw, 1.45rem); border: 0; border-radius: 1rem; background: white; box-shadow: var(--client-shadow); backdrop-filter: none; }
-.client-workspace :is(.account h2, .portal-title, .client-account summary) { color: #182744; font: 700 clamp(1rem, 2vw, 1.2rem)/1.3 var(--font-body); }
+.client-workspace :is(.account h2, .portal-title, .client-account summary) { color: var(--ink); font: 700 clamp(1rem, 2vw, 1.2rem)/1.3 var(--font-body); }
 .client-workspace .portal-stack { gap: .85rem; }
 .client-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .4rem; }
-.client-section-head a, .client-shortcuts a { color: #2450ad; font-size: .83rem; font-weight: 600; }
+.client-section-head a, .client-shortcuts a { color: var(--btn-base); font-size: .83rem; font-weight: 600; }
 .client-shortcuts { display: grid; gap: .35rem; list-style: none; margin: .5rem 0 0; padding: 0; }
 .client-shortcuts a { display: flex; align-items: center; gap: .6rem; min-height: 2.5rem; padding: .35rem .55rem; border-radius: .55rem; background: #f2f5fc; text-decoration: none; }
 .client-shortcuts a:hover { background: #e5edff; }
@@ -265,4 +269,19 @@ body:has(.c-space) .assistant-launcher-label { position: absolute; width: 1px; h
     .client-metric .client-icon svg { width: .85rem; }
     .client-metric > span:last-child { font-size: .69rem; }
     .client-workspace .request-row { flex-wrap: wrap; }
+}
+/* Finition de l'espace client (28/11/2026) : pied de page en bas d'écran, titres homogènes, parcours en trois étapes */
+.client-workspace { display: flex; flex-direction: column; min-height: 100dvh; }
+.client-workspace > main { width: min(76rem, calc(100% - 3rem)); padding-bottom: 2rem; }
+.client-workspace .module h3 { color: var(--ink); font: 700 clamp(1rem, 2vw, 1.2rem)/1.3 var(--font-body); }
+.client-empty-lead { margin: .5rem 0 .9rem; color: var(--ink-soft); }
+.client-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.client-steps li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .35rem .6rem; padding: .85rem; border-radius: .9rem; background: var(--client-tint); }
+.client-steps strong { color: var(--ink); font-size: .9rem; }
+.client-steps li > span:last-child { grid-column: 1 / -1; color: var(--ink-soft); font-size: .8rem; line-height: 1.45; }
+@media (max-width: 48rem) {
+    .client-workspace > main { width: calc(100% - 1.5rem); }
+    .client-steps { grid-template-columns: minmax(0, 1fr); gap: .45rem; }
+    .client-steps li { padding: .65rem .7rem; }
+    .client-footer .client-wrap { justify-content: center; text-align: center; }
 }

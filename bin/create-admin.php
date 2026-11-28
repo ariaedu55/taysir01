@@ -2,7 +2,7 @@
 
 /*
  * Crée un compte administrateur (le premier, ou en secours) et envoie son invitation.
- * Les comptes suivants se créent depuis le back-office : /admin/equipe/. Voir docs/comptes-equipe.md.
+ * Les comptes suivants se créent depuis l’espace équipe : /gestion/equipe/ (8 postes). Voir docs/gestion-phase-1.md.
  *
  * Usage :
  *   php bin/create-admin.php --email=prenom@taysir-orientation.com --prenom=Mamadou --nom=Cisse [--telephone="+221 77 000 00 00"]

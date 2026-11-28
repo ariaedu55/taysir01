@@ -49,11 +49,18 @@ $siteName = config('site.name');
     <?php foreach ($scripts ?? [] as $script): ?>
         <script src="<?= e(asset($script)) ?>" defer></script>
     <?php endforeach; ?>
+    <?php if ($assistantEnabled = config('assistant.enabled', false)): ?>
+        <link rel="stylesheet" href="<?= e(asset('css/assistant.css')) ?>">
+        <script src="<?= e(asset('js/assistant.js')) ?>" defer></script>
+    <?php endif; ?>
 </head>
 <body class="<?= !empty($heroHeader) ? 'has-hero-header' : 'has-light-header' ?>">
     <a class="skip" href="#contenu">Aller au contenu</a>
     <?php partial('header', ['heroHeader' => !empty($heroHeader)]); ?>
     <?= $slot ?>
     <?php partial('footer', ['photoCredits' => $photoCredits ?? []]); ?>
+    <?php if ($assistantEnabled): ?>
+        <?php partial('assistant'); ?>
+    <?php endif; ?>
 </body>
 </html>

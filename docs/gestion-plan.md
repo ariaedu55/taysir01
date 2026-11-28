@@ -380,7 +380,7 @@ Il n'existe donc qu'un **seul** suivi. Le formulaire public de demande crée dir
 - Solder la dette de test notée à chaque étape (2C, 2D, phase 7…) : droits de chaque route pour les 8 postes et le client, scénarios métier de bout en bout, moteur cible MariaDB 10.11, migrations 011 à 024 répétées sur une copie de la base de production.
 - Préparer la mise en service : sauvegarde restaurable, ordre des migrations, comptes réels de l’équipe, tâches planifiées (e-mails, rappels).
 
-### Phase 10 : refonte des interfaces (dernière phase)
+### Phase 10 : refonte des interfaces
 
 Les écrans actuels sont fonctionnels mais trop simples : ils ne guident pas assez au premier regard. Cette phase reprend le design de **chaque profil** (client, 8 postes de l’équipe) pour qu’il soit à la fois responsive, intuitif, ergonomique, beau et attractif.
 
@@ -399,6 +399,10 @@ Les écrans actuels sont fonctionnels mais trop simples : ils ne guident pas ass
 - Méthode :
   - maquette de l’écran clé de chaque profil, validée avec l’utilisateur avant de décliner ;
   - puis contrôle visuel complet à 1440, 768 et 375 px, avant la mise en service.
+
+### Phase 11 : configuration des notifications
+
+Ajoutée le 28/11/2026 à la demande de l’utilisateur, après la mise en service. Étape 1 : e-mails et tâches automatiques, avec les paramètres SMTP fournis par l’utilisateur (`config/mail.local.php` sur le VPS). Étape 2 : notifications push, à partir des éléments qu’il fournira. Détail : [gestion-phase-11.md](gestion-phase-11.md).
 
 ---
 
@@ -531,8 +535,9 @@ Pour chaque phase, le document « avant » liste les scénarios. Le document « 
 | 6. Prospection scolaire | `gestion-phase-6.md` | implémentée et testée en local, migration 022 appliquée sur WAMP |
 | 7. Communication, pilotage, conformité | `gestion-phase-7.md` | codée et commitée le 28/11 (7A, 7B, 7C), robot 172/172 ; tests visuels à la recette d’ensemble |
 | 8. Signature et encaissement en ligne | `gestion-phase-8.md` | facultatif, en attente du choix des prestataires |
-| 9. Recette d’ensemble et préparation de la mise en service | `gestion-phase-9.md` | 9A et 9B terminées. 9C qualifiée sur une copie reconstruite à partir du schéma du VPS et sur un jeu fictif riche. Bascule, comptes et SMTP en attente. |
-| 10. Refonte des interfaces | `gestion-phase-10.md` | livrée en local, 57 contrôles d’affichage sur les parcours principaux du client et des huit postes |
+| 9. Recette d’ensemble et préparation de la mise en service | `gestion-phase-9.md` | Recette et bascule terminées, migration 024 en production. Comptes réels et SMTP en attente. |
+| 10. Refonte des interfaces | `gestion-phase-10.md` | publiée avec `4922bec`, 57 contrôles d’affichage sur les parcours principaux du client et des huit postes |
+| 11. Configuration des notifications | `gestion-phase-11.md` | consignée le 28/11 : e-mails (SMTP fourni par l’utilisateur) et tâches automatiques, puis notifications push |
 
 ---
 
