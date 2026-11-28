@@ -140,8 +140,7 @@ Ce dernier test a conduit à rédiger les coordonnées en toutes lettres.
 
 1. **Recharger le compte DeepSeek.** Sans crédit, aucune réponse réelle n'est possible.
 2. **Valider l'appel réel.** Une fois le compte rechargé, vérifier une vraie réponse, puis une recherche en ligne et une recherche approfondie. Les paramètres `tools` (`deepseek_web_search`, `deepseek_read_url`), `thinking` et `reasoning_effort` suivent la documentation, mais n'ont pas pu être validés à cause du solde nul. En cas d'erreur 400, ajuster `DeepSeekClient::stream()`.
-3. **Remplacer la clé.** La clé provisoire est à remplacer dans `.env` par la clé définitive.
-4. **Serveur.** Créer `.env` sur le VPS (`/home/jomas/taysir/.env`, droits 600, propriétaire `jomas`) avec la clé, puis déployer.
+3. **Remplacer la clé.** La clé définitive peut être saisie depuis **Administration → Assistant IA**. Le réglage initial via `.env` reste disponible tant que la gestion n’a enregistré aucun réglage.
 
 ## Portrait de l’assistante — 23 novembre 2026
 
@@ -188,3 +187,10 @@ Double-cliquer sur `bin/serveur-local.bat` (WAMP doit tourner pour MySQL), puis 
 ## Clé DeepSeek dans l’administration
 
 Le travail prévu ajoute une page réservée au poste administrateur pour enregistrer, remplacer ou retirer la clé. L’assistant doit lire ce réglage à la requête suivante. La clé doit rester dans un fichier privé hors du dossier public et ne figurer ni dans l’écran, ni dans la session, ni dans le journal. La recette couvre les droits côté serveur, le jeton CSRF, la rotation et la désactivation.
+
+### Résultat
+
+- **Administration → Assistant IA** (`/gestion/assistant/`) applique les droits côté serveur à la lecture et à la modification. Enregistrer ou remplacer une clé active l’assistant à la requête suivante. La page indique l’état et la source de la clé sans afficher sa valeur.
+- La clé est écrite dans `storage/secrets/deepseek.json`, hors de la racine publique et de Git. Sous Linux, le répertoire utilise le mode `0700` et le fichier le mode `0600`. Le journal d’audit conserve l’action et son auteur. Le journal de l’assistant conserve le code d’erreur du fournisseur.
+- Dès le premier enregistrement, les réglages de la gestion priment sur `.env`. Retirer la clé désactive l’assistant même si l’environnement contient une ancienne clé. Le mode simulé est indiqué lorsqu’il est activé dans l’environnement.
+- La recette MySQL passe **233 contrôles**, dont le refus des postes non autorisés, le CSRF, l’activation, la rotation et la désactivation. Le parcours a été éprouvé avec des clés fictives. La saisie d’une clé ne déclenche aucune requête vers DeepSeek.
