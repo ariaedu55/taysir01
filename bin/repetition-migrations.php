@@ -51,7 +51,7 @@ $server->exec("CREATE DATABASE `{$base}` CHARACTER SET utf8mb4 COLLATE utf8mb4_u
 // Mêmes réglages et extensions que ce processus, sur n'importe quelle machine (WAMP, VPS)
 $php = require __DIR__ . '/php-enfant.php';
 $env = array_merge(getenv(), ['TAYSIR_DB' => $base]);
-if ($sqlUser !== $config['user']) {
+if (isset($options['sql-user']) || isset($options['sql-password'])) {
     $env += ['TAYSIR_DB_USER' => $sqlUser, 'TAYSIR_DB_PASSWORD' => $sqlPassword];
 }
 $resultats = [];
@@ -91,16 +91,16 @@ try {
         $mysql = is_string($options['mysql'] ?? null) ? $options['mysql'] : (glob('C:/wamp64/bin/mysql/mysql*/bin/mysql.exe')[0] ?? 'mysql');
         // Fichier d'options temporaire et exclusif (--defaults-file) : le client mysql n'y lit QUE ce compte,
         // jamais celui d'un ~/.my.cnf (qui l'emporterait sur un mot de passe passé autrement)
-        $options = tempnam(sys_get_temp_dir(), 'rpt');
-        chmod($options, 0600);
-        file_put_contents($options, sprintf("[client]\nuser=%s\npassword=\"%s\"\nhost=%s\nport=%d\n",
+        $fichierOptions = tempnam(sys_get_temp_dir(), 'rpt');
+        chmod($fichierOptions, 0600);
+        file_put_contents($fichierOptions, sprintf("[client]\nuser=%s\npassword=\"%s\"\nhost=%s\nport=%d\n",
             // « localhost » : TCP sur 127.0.0.1, car ce fichier exclusif ne donne pas le chemin du socket du serveur
             $sqlUser, addcslashes((string) $sqlPassword, '"\\'), $config['host'] === 'localhost' ? '127.0.0.1' : $config['host'], $config['port']));
-        $chargement = proc_open([$mysql, '--defaults-file=' . $options, $base],
+        $chargement = proc_open([$mysql, '--defaults-file=' . $fichierOptions, $base],
             [0 => ['file', $sauvegarde, 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $root);
         $erreur = stream_get_contents($pipes[2]);
         $statut = proc_close($chargement);
-        @unlink($options);
+        @unlink($fichierOptions);
         if ($statut !== 0) {
             throw new RuntimeException("Chargement de la sauvegarde impossible : {$erreur}");
         }
@@ -182,7 +182,7 @@ try {
 
     /* ---------- Migration ---------- */
     echo "\nMigration 007-010 :\n";
-    [$retour, $sortie] = $migrer();
+    [$retour, $sortie] = $migrer(['--jusqua=010']);
     $verifier('migration', 'migrate.php se termine sans erreur', $retour === 0, trim(str_replace("\n", ' | ', $sortie)));
     $verifierMigre('migration');
 
@@ -201,11 +201,11 @@ try {
     [$retour] = $migrer(['--jusqua=009']);
     $verifier('reprise', 'Réapplication de 007 à 009', $retour === 0);
     $db->exec('ALTER TABLE request_assignments DROP FOREIGN KEY request_assignments_user_fk'); // 1re instruction de 010, puis « coupure »
-    [$retour, $sortie] = $migrer();
+    [$retour, $sortie] = $migrer(['--jusqua=010']);
     $verifier('reprise', 'Relance simple : échec clair sur l’instruction 1, migration non enregistrée',
         $retour !== 0 && str_contains($sortie, 'instruction 1 sur') && str_contains($sortie, '--reprendre=010_files_affectation.sql:1')
         && (int) $db->query("SELECT COUNT(*) FROM migrations WHERE name = '010_files_affectation.sql'")->fetchColumn() === 0, $retour !== 0 ? 'échec signalé' : 'pas d’échec !');
-    [$retour, $sortie] = $migrer(['--reprendre=010_files_affectation.sql:2']);
+    [$retour, $sortie] = $migrer(['--reprendre=010_files_affectation.sql:2', '--jusqua=010']);
     $verifier('reprise', 'Reprise avec --reprendre=…:2', $retour === 0 && str_contains($sortie, 'Appliquée : 010_files_affectation.sql'), trim(str_replace("\n", ' | ', $sortie)));
     $verifierMigre('reprise');
 

@@ -24,6 +24,7 @@ $siteName = config('site.name');
     <meta name="theme-color" content="#ffffff">
     <meta name="description" content="<?= e($description ?? 'Taysir Orientation Voyage accompagne vos études au Sénégal et à l’étranger et vous aide à préparer votre voyage.') ?>">
     <title><?= e($documentTitle ?? (isset($title) ? $title . ' — ' . $siteName : $siteName)) ?></title>
+    <link rel="icon" href="<?= e(asset('images/brand/logo-navy.webp')) ?>">
     <?php if (isset($robots)): ?>
         <meta name="robots" content="<?= e($robots) ?>">
     <?php endif; ?>

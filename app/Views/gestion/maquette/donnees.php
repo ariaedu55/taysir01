@@ -26,15 +26,15 @@ $equipe = [
 $nav = [
     'admin' => [
         ['', [['Ma journée', 'sun', 'journee', null], ['Tableau de bord', 'chart', null, null]]],
-        ['Relation client', [['Personnes', 'users', null, null], ['Agenda', 'calendar', null, 6], ['Dossiers', 'folder', 'dossiers', 42]]],
+        ['Relation client', [['Personnes', 'users', 'personnes', null], ['Agenda', 'calendar', 'agenda', 6], ['Dossiers', 'folder', 'dossiers', 42]]],
         ['Prospection', [['Prospects', 'target', 'prospects', 18], ['Campagnes', 'flag', null, null]]],
         ['Finance', [['À encaisser', 'wallet', null, 5], ['Dépenses', 'receipt', null, null]]],
         ['Paramètres', [['Équipe', 'team', null, null], ['Agences', 'building', null, null], ['Services et tarifs', 'tag', null, null], ['Modèles de procédure', 'route', null, 2]]],
     ],
     'secretaire' => [
         ['', [['Ma journée', 'sun', 'journee', null]]],
-        ['Accueil', [['File d’attente', 'queue', null, 3], ['Agenda', 'calendar', null, 9], ['Demandes de rendez-vous', 'inbox', 'journee', 4]]],
-        ['Relation client', [['Personnes', 'users', null, null], ['Dossiers', 'folder', 'dossiers', null]]],
+        ['Accueil', [['File d’attente', 'queue', null, 3], ['Agenda', 'calendar', 'agenda', 9], ['Demandes de rendez-vous', 'inbox', 'journee', 4]]],
+        ['Relation client', [['Personnes', 'users', 'personnes', null], ['Dossiers', 'folder', 'dossiers', null]]],
     ],
     'prospection' => [
         ['', [['Ma journée', 'sun', 'journee', null]]],
@@ -43,24 +43,23 @@ $nav = [
     'commerciale' => [
         ['', [['Ma journée', 'sun', 'journee', null]]],
         ['Prospection', [['Mes prospects', 'target', 'prospects', 12], ['Rappels', 'phone', null, 7]]],
-        ['Relation client', [['Agenda', 'calendar', null, 3]]],
     ],
     'conseiller' => [
         ['', [['Ma journée', 'sun', 'journee', null]]],
-        ['Mes clients', [['Personnes', 'users', null, null], ['Dossiers', 'folder', 'dossiers', 14], ['Agenda', 'calendar', null, 4], ['Entretiens', 'chat', null, null]]],
+        ['Mes clients', [['Personnes', 'users', 'personnes', null], ['Dossiers', 'folder', 'dossiers', 14], ['Agenda', 'calendar', 'agenda', 4], ['Entretiens', 'chat', null, null]]],
     ],
     'orientation' => [
         ['', [['Ma journée', 'sun', 'journee', null]]],
-        ['Orientation', [['À orienter', 'compass', 'dossiers', 5], ['Orientés', 'check', 'dossiers', null], ['Agenda', 'calendar', null, 2]]],
+        ['Orientation', [['À orienter', 'compass', 'dossiers', 5], ['Orientés', 'check', 'dossiers', null], ['Personnes', 'users', 'personnes', null], ['Agenda', 'calendar', 'agenda', 2]]],
     ],
     'traitement' => [
         ['', [['Ma journée', 'sun', 'journee', null]]],
-        ['Dossiers', [['Mes dossiers', 'folder', 'dossiers', 23], ['Pièces à valider', 'file', 'dossiers', 3], ['Échéances', 'clock', null, 4]]],
+        ['Dossiers', [['Mes dossiers', 'folder', 'dossiers', 23], ['Pièces à valider', 'file', 'dossiers', 3], ['Personnes', 'users', 'personnes', null], ['Échéances', 'clock', null, 4]]],
     ],
     'comptable' => [
         ['', [['Ma journée', 'sun', 'journee', null]]],
         ['Finance', [['À encaisser', 'wallet', null, 5], ['Règlements', 'receipt', null, null], ['Devis', 'doc', null, 2], ['Dépenses', 'cart', null, null], ['Rapports', 'chart', null, null]]],
-        ['Relation client', [['Dossiers', 'folder', 'dossiers', null]]],
+        ['Relation client', [['Personnes', 'users', 'personnes', null], ['Dossiers', 'folder', 'dossiers', null]]],
     ],
 ];
 

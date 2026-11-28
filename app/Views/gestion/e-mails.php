@@ -13,6 +13,7 @@ $kinds = [
     'welcome' => 'Bienvenue', 'request-created' => 'Demande reçue', 'request-agency' => 'Alerte demande',
     'request-updated' => 'Suivi de demande', 'reply-agency' => 'Réponse client', 'appointment-created' => 'Rendez-vous reçu',
     'appointment-agency' => 'Alerte rendez-vous', 'appointment-confirmed' => 'Rendez-vous confirmé',
+    'appointment-reminder' => 'Rappel de rendez-vous', 'appointment-moved' => 'Rendez-vous déplacé',
     'appointment-cancelled' => 'Rendez-vous annulé', 'password-reset' => 'Mot de passe oublié', 'password-changed' => 'Mot de passe modifié',
     'staff-invitation' => 'Invitation équipe', 'request-assigned' => 'Dossier affecté', 'contact-ack' => 'Contact reçu', 'contact-agency' => 'Alerte contact',
 ];

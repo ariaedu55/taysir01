@@ -27,7 +27,7 @@ $flashes = array_filter(['ok' => Session::get('_success'), 'info' => Session::ge
     <link rel="icon" href="<?= e(asset('images/brand/logo-navy.webp')) ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prata&amp;family=Poppins:wght@400;500;600;700;800&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;display=swap">
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('css/gestion.css')) ?>">
     <script src="<?= e(asset('js/gestion.js')) ?>" defer></script>
@@ -83,10 +83,10 @@ $flashes = array_filter(['ok' => Session::get('_success'), 'info' => Session::ge
         <header class="g-topbar">
             <button class="g-icon-btn g-menu-btn" type="button" data-g-drawer-open aria-controls="g-sidebar" aria-label="Ouvrir le menu"><?= gestion_icone('menu') ?></button>
             <div class="g-heading">
-                <p>Espace équipe · <?= e($c['intitule']) ?></p>
+                <p><?= e($c['intitule']) ?></p>
                 <h1><?= e($title) ?></h1>
             </div>
-            <?php if ($c['recherche'] !== []): ?>
+            <?php if ($c['recherche']): ?>
                 <button class="g-search" type="button" data-g-search-open aria-haspopup="dialog">
                     <?= gestion_icone('search', 18) ?>
                     <span>Rechercher un dossier, un nom, un téléphone…</span>
@@ -116,11 +116,11 @@ $flashes = array_filter(['ok' => Session::get('_success'), 'info' => Session::ge
     </nav>
 </div>
 
-<?php if ($c['recherche'] !== []): ?>
-    <div class="g-palette" role="dialog" aria-modal="true" aria-label="Recherche dans vos dossiers" hidden data-g-palette>
+<?php if ($c['recherche']): ?>
+    <div class="g-palette" role="dialog" aria-modal="true" aria-label="Recherche dans votre espace" hidden data-g-palette data-g-search-url="<?= e(url('/gestion/recherche/')) ?>">
         <div class="g-palette-box">
             <label class="g-palette-field"><?= gestion_icone('search') ?><span class="sr-only">Rechercher</span>
-                <input type="search" placeholder="Nom, téléphone, référence de dossier…" autocomplete="off" data-g-palette-input>
+                <input type="search" placeholder="Nom, téléphone, e-mail, référence…" autocomplete="off" data-g-palette-input>
                 <kbd>Échap</kbd>
             </label>
             <ul class="g-palette-results" role="listbox" data-g-palette-results></ul>
@@ -129,6 +129,5 @@ $flashes = array_filter(['ok' => Session::get('_success'), 'info' => Session::ge
     </div>
 <?php endif; ?>
 <div class="g-toasts" aria-live="polite" data-g-toasts></div>
-<script type="application/json" id="g-search-data"><?= json_encode($c['recherche'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
 </body>
 </html>

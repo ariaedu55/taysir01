@@ -80,7 +80,7 @@ final class Notifier
                 'details' => array_filter([
                     'Service' => $service['title'] ?? '',
                     'Client' => $name,
-                    'Téléphone' => $request['phone'],
+                    'Téléphone' => $request['phone'] ?? '—',
                     'Destination' => (string) $request['destination'],
                     'Statut' => ServiceRequest::statusLabel($request['status']),
                 ], static fn ($value) => $value !== ''),
@@ -170,16 +170,20 @@ final class Notifier
             ], $request['reference']);
     }
 
-    public static function clientReplied(array $request, string $message, array $documentNames): void
+    public static function clientReplied(array $request, string $message, int $documentCount): void
     {
         $name = $request['first_name'] . ' ' . $request['last_name'];
         self::toAgency('reply-agency', 'Réponse du client sur ' . $request['reference'] . ' · ' . $name, [
-            'preheader' => $documentNames !== [] ? count($documentNames) . ' document(s) ajouté(s)' : 'Nouveau message du client',
+            'preheader' => match ($documentCount) {
+                0 => 'Nouveau message du client',
+                1 => '1 document ajouté',
+                default => $documentCount . ' documents ajoutés',
+            },
             'heading' => 'Le client a répondu',
             'paragraphs' => [$name . ' a complété sa demande ' . $request['reference'] . '.'],
             'quote' => $message !== '' ? $message : null,
             'quoteBy' => 'Message du client',
-            'details' => $documentNames !== [] ? ['Documents ajoutés' => implode("\n", $documentNames)] : [],
+            'details' => $documentCount > 0 ? ['Documents ajoutés' => (string) $documentCount] : [],
             'button' => ['Ouvrir la demande', absolute_url('/gestion/dossiers/' . $request['reference'] . '/')],
         ], $request['email'], $request['reference']);
     }
@@ -202,7 +206,8 @@ final class Notifier
                 'Votre demande de rendez-vous est enregistrée. Un conseiller vous contacte au ' . $appointment['phone'] . ' pour confirmer l’heure exacte.',
             ],
             'details' => $details,
-            'button' => $appointment['user_id'] ? ['Voir mes rendez-vous', absolute_url('/mon-espace/demandes/')] : null,
+            'button' => $appointment['user_id'] ? ['Voir mes rendez-vous', absolute_url('/mon-espace/demandes/')]
+                : ['Annuler mon rendez-vous', Appointment::guestCancellationLink($appointment)],
         ], $appointment['reference']);
 
         self::toAgency('appointment-agency', 'Rendez-vous à confirmer : ' . $name . ' (' . $appointment['reference'] . ')', [
@@ -225,29 +230,112 @@ final class Notifier
         if (!$confirmed && !$cancelled) {
             return;
         }
-        $name = $appointment['first_name'] . ' ' . $appointment['last_name'];
-        $when = $scheduledAt !== null ? self::day($scheduledAt) . ' à ' . date('H\hi', strtotime($scheduledAt)) : '';
-        $mode = Appointment::MODES[$appointment['mode']] ?? '';
+        if ($confirmed) {
+            $current = Appointment::find((int) $appointment['id']) ?? $appointment;
+            self::appointmentScheduleMail($current, $appointment['status'] === 'confirme' ? $appointment : null);
+            return;
+        }
+        self::appointmentScheduleMail($appointment, cancelled: true);
+    }
 
-        self::toClient($confirmed ? 'appointment-confirmed' : 'appointment-cancelled', $appointment['email'], $name,
-            $confirmed ? 'Rendez-vous confirmé le ' . $when : 'Votre rendez-vous ' . $appointment['reference'] . ' est annulé', [
-                'preheader' => $confirmed ? $mode . ', ' . $when : 'Contactez-nous pour fixer une autre date.',
-                'heading' => $confirmed ? 'Votre rendez-vous est confirmé' : 'Rendez-vous annulé',
-                'paragraphs' => [
-                    'Bonjour ' . $appointment['first_name'] . ',',
-                    $confirmed
-                        ? 'Votre conseiller Taysir vous attend. Merci de prévenir l’agence si vous ne pouvez pas venir.'
-                        : 'Votre rendez-vous ' . $appointment['reference'] . ' est annulé. Pour en fixer un autre, prenez rendez-vous en ligne ou écrivez-nous sur WhatsApp.',
-                ],
-                'details' => $confirmed ? [
-                    'Date et heure' => ucfirst($when),
-                    'Échange' => $mode,
-                    'Objet' => Appointment::MOTIVES[$appointment['motive']] ?? '',
-                    'Référence' => $appointment['reference'],
-                ] : [],
-                'button' => $confirmed ? null : ['Prendre un autre rendez-vous', absolute_url('/rendez_vous_orientation/')],
-                'after' => $confirmed && str_starts_with($appointment['mode'], 'agence') ? ['Adresse du siège : ' . config('site.contact.address') . '.'] : [],
-            ], $appointment['reference']);
+    public static function appointmentScheduleMail(array $appointment, ?array $previous = null, ?string $expires = null, bool $cancelled = false): void
+    {
+        if (!filter_var($appointment['email'], FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+        $kind = match (true) {
+            $cancelled => 'appointment-cancelled',
+            $expires !== null => 'appointment-reminder',
+            $previous !== null => 'appointment-moved',
+            default => 'appointment-confirmed',
+        };
+        $heading = match ($kind) {
+            'appointment-reminder' => 'Rappel de votre rendez-vous',
+            'appointment-moved' => 'Votre rendez-vous est déplacé',
+            'appointment-cancelled' => 'Votre rendez-vous est annulé',
+            default => 'Votre rendez-vous est confirmé',
+        };
+        $format = static function (array $entry): string {
+            $agency = isset($entry['agency_id']) ? (int) $entry['agency_id'] : null;
+            $scheduled = $entry['starts_at_utc'] ?? $entry['scheduled_at'];
+            return $scheduled
+                ? Appointment::local($scheduled, Appointment::zone($agency), 'd/m/Y à H:i') . ' · ' . Appointment::city($agency)
+                : self::day($entry['preferred_date']) . ' · ' . (Appointment::SLOTS[$entry['preferred_slot']] ?? '');
+        };
+        $details = ['Référence' => $appointment['reference'], 'Date et heure' => $format($appointment),
+            'Échange' => Appointment::MODES[$appointment['mode']] ?? '', 'Objet' => Appointment::MOTIVES[$appointment['motive']] ?? ''];
+        if ($previous !== null) {
+            $details['Ancien créneau'] = $format($previous);
+        }
+        $city = Appointment::city(isset($appointment['agency_id']) ? (int) $appointment['agency_id'] : null);
+        if (str_starts_with($appointment['mode'], 'agence-')) {
+            $details['Agence'] = $city;
+            foreach (config('site.offices', []) as $office) {
+                if ($office['city'] === $city && !empty($office['address'])) {
+                    $details['Adresse'] = $office['address'];
+                    break;
+                }
+            }
+        }
+        $paragraphs = ['Bonjour ' . $appointment['first_name'] . ','];
+        if ($appointment['mode'] === 'visio') {
+            $person = isset($appointment['person_id']) ? \App\Models\Person::find((int) $appointment['person_id']) : null;
+            if ($appointment['starts_at_utc'] && in_array($person['timezone'] ?? '', \DateTimeZone::listIdentifiers(), true)) {
+                $details['Votre heure locale'] = Appointment::local($appointment['starts_at_utc'], new \DateTimeZone($person['timezone']), 'd/m/Y à H:i T');
+            }
+            if (!$cancelled) $paragraphs[] = 'Votre conseiller vous communiquera le lien de visioconférence.';
+        }
+        $button = ['Prendre un autre rendez-vous', absolute_url('/rendez_vous_orientation/')];
+        if (!$cancelled) {
+            $link = Appointment::guestCancellationLink($appointment);
+            $button = $link === null ? ['Voir mes rendez-vous', absolute_url('/mon-espace/demandes/')] : ['Annuler mon rendez-vous', $link];
+        }
+        $data = ['audience' => 'client', 'heading' => $heading, 'details' => $details, 'preheader' => $format($appointment),
+            'paragraphs' => $paragraphs, 'quote' => null, 'quoteBy' => null, 'after' => [],
+            'button' => $button];
+        MailOutbox::queue($kind, $appointment['email'], $appointment['first_name'] . ' ' . $appointment['last_name'],
+            $heading . ' · ' . $appointment['reference'], self::render('emails/layout', $data), self::render('emails/text', $data),
+            (string) config('mail.agency'), $appointment['reference'],
+            $expires === null ? null : ['start' => $appointment['starts_at_utc'], 'expires' => $expires]);
+    }
+
+    /**
+     * Compte rendu ou note PARTAGÉ disponible (E3, N12) : seulement si la personne a un compte client ACTIF, vers
+     * l'adresse de ce compte (jamais celle du rendez-vous ou de la fiche, qu'un tiers a pu saisir), sans le texte ni
+     * l'auteur de la note. Rien pour une personne sans compte.
+     */
+    public static function noteShared(int $personId): void
+    {
+        $compte = \App\Core\Database::connection()->prepare("SELECT id, first_name, last_name, email FROM users WHERE person_id = ? AND role = 'client' AND active = 1 LIMIT 1");
+        $compte->execute([$personId]);
+        $user = $compte->fetch();
+        if ($user === false) {
+            return;
+        }
+        self::toClient('note-shared', $user['email'], $user['first_name'] . ' ' . $user['last_name'], 'Un compte rendu est disponible dans votre espace', [
+            'preheader' => 'Connectez-vous à votre espace pour le lire.',
+            'heading' => 'Un compte rendu vous attend',
+            'paragraphs' => [
+                'Bonjour ' . $user['first_name'] . ',',
+                'Votre conseiller Taysir a partagé un compte rendu avec vous. Pour le lire, connectez-vous à votre espace.',
+            ],
+            'button' => ['Ouvrir mon espace', absolute_url('/mon-espace/')],
+        ]);
+    }
+
+    public static function requestDeadlineReminder(int $id, string $reference, string $date, string $expires, array $recipient): void
+    {
+        if (!filter_var($recipient['email'], FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+        $heading = 'Une échéance approche';
+        $data = ['audience' => 'client', 'heading' => $heading, 'details' => ['Dossier' => $reference, 'Échéance' => self::day($date)],
+            'preheader' => 'Une échéance de votre dossier est prévue demain.',
+            'paragraphs' => ['Consultez le dossier dans votre espace Taysir pour voir l’action attendue.'],
+            'quote' => null, 'quoteBy' => null, 'after' => [], 'button' => ['Se connecter', absolute_url('/connexion/')]];
+        MailOutbox::queue('request-deadline-reminder', $recipient['email'], $recipient['first_name'], $heading . ' · ' . $reference,
+            self::render('emails/layout', $data), self::render('emails/text', $data), (string) config('mail.agency'),
+            $id . ':' . $recipient['id'], ['expires' => $expires]);
     }
 
     public static function contactReceived(array $message): void
@@ -277,8 +365,12 @@ final class Notifier
 
     /* ---------- Outils ---------- */
 
-    private static function toClient(string $kind, string $email, string $name, string $subject, array $content, ?string $related = null): void
+    private static function toClient(string $kind, ?string $email, string $name, string $subject, array $content, ?string $related = null): void
     {
+        // N9 : un dossier ouvert par l'équipe peut n'avoir aucune adresse : rien n'est mis en file, aucune erreur
+        if ($email === null || trim($email) === '') {
+            return;
+        }
         self::queue($kind, $email, $name, $subject, $content + ['audience' => 'client'], (string) config('mail.agency'), $related);
     }
 

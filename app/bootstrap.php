@@ -16,6 +16,8 @@ spl_autoload_register(static function (string $class): void {
 });
 
 require BASE_PATH . '/app/Helpers/functions.php';
+require BASE_PATH . '/app/Helpers/env.php';
+load_env(BASE_PATH . '/.env');
 
 date_default_timezone_set((string) config('app.timezone', 'UTC'));
 

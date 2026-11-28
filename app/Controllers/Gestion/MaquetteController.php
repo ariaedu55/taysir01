@@ -43,6 +43,31 @@ final class MaquetteController extends Controller
         $this->show('dossier', 'dossiers', $found[1] . ' · ' . $found[0], ['dossier' => $found]);
     }
 
+    /** Maquette 2.0 (docs/gestion-phase-2.md) : agenda de la semaine. */
+    public function agenda(): void
+    {
+        $this->show('agenda', 'agenda', 'Agenda');
+    }
+
+    /** Maquette 2.0 : fiche personne (Awa Sène). */
+    public function personne(): void
+    {
+        $this->show('personne', 'personnes', 'Awa Sène');
+    }
+
+    /** Maquette 2.0 : réservation publique d'un créneau, dans le gabarit du site. */
+    public function reservation(): void
+    {
+        $this->guard();
+        require_once BASE_PATH . '/app/Views/gestion/icones.php';
+        $this->render('gestion/maquette/reservation', $this->data() + [
+            'title' => 'Prendre rendez-vous (maquette)',
+            'robots' => 'noindex',
+            'styles' => ['css/gestion-client.css'],
+            'scripts' => ['js/gestion.js'],
+        ]);
+    }
+
     public function prospects(): void
     {
         $this->show('prospects', 'prospects', 'Prospects');
@@ -96,6 +121,7 @@ final class MaquetteController extends Controller
 
     private function data(): array
     {
-        return require BASE_PATH . '/app/Views/gestion/maquette/donnees.php';
+        return (require BASE_PATH . '/app/Views/gestion/maquette/donnees.php')
+            + (require BASE_PATH . '/app/Views/gestion/maquette/donnees-phase2.php');
     }
 }

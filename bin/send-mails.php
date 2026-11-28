@@ -16,9 +16,13 @@ if (PHP_SAPI !== 'cli') {
     exit("À lancer en ligne de commande.\n");
 }
 
-require dirname(__DIR__) . '/app/bootstrap.php';
+require_once dirname(__DIR__) . '/app/bootstrap.php';
 
 use App\Models\MailOutbox;
+
+if (in_array('--planifie', $argv, true) && !in_array(config('mail.driver', 'log'), ['smtp', 'mail'], true)) {
+    exit(0);
+}
 
 // Une seule exécution à la fois, même si la tâche précédente n'est pas finie.
 $lock = fopen(BASE_PATH . '/storage/cache/send-mails.lock', 'c');

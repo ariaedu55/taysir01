@@ -14,7 +14,9 @@ use App\Models\ServiceRequest;
         $title = match ($event['type']) {
             'creation' => 'Demande envoyée',
             'statut' => ServiceRequest::statusLabel((string) $event['status']),
-            default => $fromClient ? ($staffView ? 'Message du client' : 'Votre message') : 'Message de votre conseiller',
+            default => $fromClient
+                ? ($staffView || !empty($tutorView) ? 'Message du client' : 'Votre message')
+                : (!empty($tutorView) ? 'Message du conseiller' : 'Message de votre conseiller'),
         };
         if ($staffView && $event['type'] === 'note' && !$fromClient) {
             $title = $event['visible'] ? 'Note envoyée au client' : 'Note interne';

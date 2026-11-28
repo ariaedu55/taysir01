@@ -133,20 +133,34 @@
     if (palette) {
         const input = palette.querySelector('[data-g-palette-input]');
         const list = palette.querySelector('[data-g-palette-results]');
+        // Recherche côté serveur (2A) : personnes et dossiers du périmètre, 20 résultats au plus
+        const endpoint = palette.dataset.gSearchUrl;
         let data = [];
-        try {
-            data = JSON.parse(document.getElementById('g-search-data').textContent);
-        } catch {
-            data = [];
-        }
+        let timer = null;
+        let controller = null;
+        let lastQuery = '';
+        const fetchResults = (query) => {
+            controller?.abort();
+            if (query.length < 2) {
+                data = [];
+                render();
+                return;
+            }
+            controller = new AbortController();
+            fetch(endpoint + '?format=json&q=' + encodeURIComponent(query), { headers: { Accept: 'application/json' }, signal: controller.signal, credentials: 'same-origin' })
+                .then((r) => (r.ok ? r.json() : { resultats: [] }))
+                .then((json) => {
+                    data = json.resultats || [];
+                    render();
+                })
+                .catch(() => {});
+        };
         let active = 0;
         let returnFocus = null;
-        const normalize = (text) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, '');
         const render = () => {
-            const query = normalize(input.value);
-            const results = data.filter((item) => !query || normalize(item.titre + item.detail).includes(query)).slice(0, 8);
+            const results = data.slice(0, 8);
             active = Math.min(active, Math.max(0, results.length - 1));
-            list.innerHTML = results.length ? '' : '<li class="g-palette-empty">Aucun résultat dans votre périmètre.</li>';
+            list.innerHTML = results.length ? '' : '<li class="g-palette-empty">' + (input.value.trim().length < 2 ? 'Tapez au moins deux caractères.' : 'Aucun résultat dans votre périmètre.') + '</li>';
             results.forEach((item, index) => {
                 const li = document.createElement('li');
                 const a = document.createElement('a');
@@ -165,6 +179,8 @@
             returnFocus = document.activeElement;
             palette.hidden = false;
             input.value = '';
+            data = [];
+            lastQuery = '';
             active = 0;
             render();
             input.focus();
@@ -187,7 +203,13 @@
         });
         input.addEventListener('input', () => {
             active = 0;
-            render();
+            clearTimeout(timer);
+            const query = input.value.trim();
+            if (query === lastQuery) {
+                return;
+            }
+            lastQuery = query;
+            timer = setTimeout(() => fetchResults(query), 180);
         });
         input.addEventListener('keydown', (event) => {
             const links = [...list.querySelectorAll('a')];
@@ -267,6 +289,7 @@
             box.addEventListener('click', (event) => event.stopPropagation());
         });
         table.gestionSelection = { boxes, update };
+        update();
     });
 
     /* ---------- Panneau latéral ---------- */

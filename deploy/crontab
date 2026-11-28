@@ -1,5 +1,7 @@
 # Tâches planifiées du site (voir docs/deploiement-vps.md).
-# Installation, avec l'utilisateur du site : crontab -u www-data deploy/crontab
+# Ajouter ces lignes à la crontab existante du compte du site après le test SMTP.
+# Les commandes planifiées sortent immédiatement lorsque mail.driver vaut log.
 #
 # Toutes les minutes : envoi des e-mails en file d'attente (mail_outbox) et nouvelles tentatives.
-* * * * * php /var/www/taysir/bin/send-mails.php >> /var/www/taysir/storage/logs/send-mails.log 2>&1
+* * * * * /usr/bin/php /var/www/taysir/bin/send-mails.php --planifie >> /var/www/taysir/storage/logs/send-mails.log 2>&1
+*/15 * * * * /usr/bin/php /var/www/taysir/bin/rappels.php --planifie >> /var/www/taysir/storage/logs/rappels.log 2>&1

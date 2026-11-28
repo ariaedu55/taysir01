@@ -49,7 +49,7 @@ $choiceGroup = static function (string $name, string $legend, array $choices, st
             <div class="service-form-head" data-reveal="up">
                 <p class="kicker">Formulaire</p>
                 <h2 id="formulaire-titre">Votre rendez-vous</h2>
-                <p>Choisissez un jour et un moment : l’agence vous confirme l’heure exacte par téléphone ou sur WhatsApp.</p>
+                <p><?= $direct ? 'Choisissez un créneau disponible ou demandez un autre horaire à l’agence.' : 'Choisissez un jour et un moment. L’agence vous confirme l’heure exacte par téléphone ou sur WhatsApp.' ?></p>
             </div>
             <?php partial('flash'); ?>
 
@@ -72,6 +72,15 @@ $choiceGroup = static function (string $name, string $legend, array $choices, st
                         <?php partial('form-field', ['name' => 'preferred_date', 'label' => 'Jour souhaité', 'type' => 'date', 'required' => true, 'min' => $minDate, 'max' => $maxDate, 'hint' => 'Du lundi au samedi ; le samedi, le matin seulement.']); ?>
                         <?php $choiceGroup('preferred_slot', 'Moment de la journée', Appointment::SLOTS, '', 'choice-grid choice-grid-2'); ?>
                     </div>
+                    <?php if ($direct): ?>
+                        <div class="field" data-direct-slots="<?= e(url('/rendez_vous_orientation/creneaux/')) ?>">
+                            <label for="direct-time">Créneau confirmé · heure locale de l’agence</label>
+                            <input type="hidden" name="booking_token" value="<?= e($bookingToken) ?>">
+                            <select id="direct-time" name="direct_time" data-previous-time="<?= e(old('direct_time')) ?>"><option value="">Demander un horaire à l’agence</option></select>
+                            <p data-slot-status aria-live="polite"></p>
+                            <?php if (isset($errors['direct_time'])): ?><p class="field-error" role="alert"><?= e($errors['direct_time']) ?></p><?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </fieldset>
 
                 <fieldset class="form-section glass" data-reveal="up">
@@ -87,7 +96,7 @@ $choiceGroup = static function (string $name, string $legend, array $choices, st
 
                 <div class="form-submit" data-reveal="up">
                     <p><?= $user === null ? 'Astuce : avec un <a href="' . e(url('/inscription/?retour=' . rawurlencode('/rendez_vous_orientation/'))) . '">compte Taysir</a>, vous retrouvez vos rendez-vous dans votre espace.' : 'Ce rendez-vous apparaîtra dans votre espace Taysir.' ?></p>
-                    <button class="button primary" type="submit">Demander le rendez-vous</button>
+                    <button class="button primary" type="submit" data-appointment-submit>Demander le rendez-vous</button>
                 </div>
             </form>
         </section>

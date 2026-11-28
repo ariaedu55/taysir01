@@ -8,7 +8,8 @@ declare(strict_types=1);
  *
  * Actif seulement si la variable d'environnement TAYSIR_DB porte un nom finissant par « _recette » :
  * jamais en production, où elle n'existe pas. Alors :
- * - base de données : TAYSIR_DB (et, en option, le compte SQL dédié TAYSIR_DB_USER / TAYSIR_DB_PASSWORD) ;
+ * - base de données : TAYSIR_DB (et, en option, le compte SQL dédié TAYSIR_DB_USER / TAYSIR_DB_PASSWORD, et le port
+ *   TAYSIR_DB_PORT d'une instance de recette séparée, par exemple MariaDB 10.11 isolée) ;
  * - pièces, e-mails et sessions : storage/recette/<base>/, propres à l'exécution et supprimés à la fin.
  *
  * Retourne null hors recette.
@@ -18,10 +19,12 @@ if (!is_string($base) || !preg_match('/^[a-z0-9_]+_recette$/D', $base)) {
     return null;
 }
 $user = getenv('TAYSIR_DB_USER');
+$port = getenv('TAYSIR_DB_PORT');
 
 return [
     'base' => $base,
     'user' => is_string($user) && $user !== '' ? $user : null,
     'password' => is_string($user) && $user !== '' ? (string) getenv('TAYSIR_DB_PASSWORD') : null,
+    'port' => is_string($port) && ctype_digit($port) ? (int) $port : null,
     'storage' => dirname(__DIR__) . '/storage/recette/' . $base,
 ];

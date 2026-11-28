@@ -14,7 +14,18 @@ use App\Controllers\Gestion\EquipeController as GestionEquipe;
 use App\Controllers\Gestion\JourneeController as GestionJournee;
 use App\Controllers\Gestion\MaquetteController as GestionMaquette;
 use App\Controllers\Gestion\MessageController as GestionMessages;
+use App\Controllers\Gestion\PersonneController as GestionPersonnes;
+use App\Controllers\Gestion\RechercheController as GestionRecherche;
+use App\Controllers\Gestion\ModeleController as GestionModeles;
+use App\Controllers\Gestion\MessageEquipeController as GestionMessagesEquipe;
 use App\Controllers\Gestion\RendezVousController as GestionRendezVous;
+use App\Controllers\Gestion\TaskController as GestionTaches;
+use App\Controllers\Gestion\TutorAccessController as GestionTuteurs;
+use App\Controllers\Gestion\ReceptionController as GestionAccueil;
+use App\Controllers\Gestion\FinanceController as GestionFinance;
+use App\Controllers\Gestion\ProspectController as GestionProspects;
+use App\Controllers\Gestion\PilotageController as GestionPilotage;
+use App\Controllers\Gestion\DonneesController as GestionDonnees;
 use App\Controllers\HomeController;
 use App\Controllers\ArticleController;
 use App\Controllers\OrientationController;
@@ -88,10 +99,17 @@ foreach (ServiceRequest::services() as $service) {
 $router->get('/rendez_vous_orientation', [AppointmentController::class, 'create']);
 $router->post('/rendez_vous_orientation', [AppointmentController::class, 'store']);
 $router->get('/rendez_vous_orientation/confirmation', [AppointmentController::class, 'confirmation']);
+$router->get('/rendez_vous_orientation/creneaux', [AppointmentController::class, 'slots']);
+$router->get('/rendez_vous_orientation/annuler', [AppointmentController::class, 'guestCancellation']);
+$router->post('/rendez_vous_orientation/annuler', [AppointmentController::class, 'confirmGuestCancellation']);
+$router->post('/mon-espace/rendez-vous/{reference}/annuler', [AppointmentController::class, 'cancel'], ['auth']);
 $router->get('/mon-espace/demandes', [ClientRequests::class, 'index'], ['auth']);
 $router->get('/mon-espace/demandes/{reference}', [ClientRequests::class, 'show'], ['auth']);
 $router->post('/mon-espace/demandes/{reference}', [ClientRequests::class, 'reply'], ['auth']);
+$router->post('/mon-espace/demandes/{reference}/pieces-attendues/{id}', [ClientRequests::class, 'depositRequirement'], ['auth']);
 $router->get('/mon-espace/demandes/{reference}/documents/{id}', [ClientRequests::class, 'document'], ['auth']);
+$router->post('/mon-espace/demandes/{reference}/tuteurs/{id}/revoquer', [ClientRequests::class, 'revokeTutor'], ['auth']);
+$router->get('/mon-espace/demandes/{reference}/recus/{number}', [ClientRequests::class, 'financeReceipt'], ['auth']);
 
 // Offres et activités (voir docs/offres-activites.md).
 foreach (ActivityController::pages() as $activity) {
@@ -109,6 +127,9 @@ $router->get('/gestion/maquette/dossiers', [GestionMaquette::class, 'dossiers'])
 $router->get('/gestion/maquette/dossiers/{reference}', [GestionMaquette::class, 'dossier']);
 $router->get('/gestion/maquette/prospects', [GestionMaquette::class, 'prospects']);
 $router->get('/gestion/maquette/client', [GestionMaquette::class, 'client']);
+$router->get('/gestion/maquette/agenda', [GestionMaquette::class, 'agenda']);
+$router->get('/gestion/maquette/personnes', [GestionMaquette::class, 'personne']);
+$router->get('/gestion/maquette/rendez-vous', [GestionMaquette::class, 'reservation']);
 $router->get('/faq', [AgencyController::class, 'faq']);
 $router->get('/nos-regles-et-valeurs', [AgencyController::class, 'rules']);
 $router->get('/terms-conditions', [AgencyController::class, 'privacy']);
@@ -120,14 +141,59 @@ $router->redirect('/journal-ecoles', '/formations-profesionnelles/');
 // Espace équipe (docs/gestion-phase-1.md, 1B) : chaque module est réservé aux postes de la matrice (middleware « acces »),
 // et chaque dossier ou pièce est revérifié par le filtre de périmètre dans le contrôleur.
 $router->get('/gestion', [GestionJournee::class, 'index'], ['auth', 'acces:gestion']);
+$router->post('/gestion/taches', [GestionTaches::class, 'store'], ['auth', 'acces:gestion']);
+$router->post('/gestion/taches/{id}/etat', [GestionTaches::class, 'etat'], ['auth', 'acces:gestion']);
 $dossiers = ['auth', 'acces:dossiers'];
 $router->get('/gestion/dossiers', [GestionDossiers::class, 'index'], $dossiers);
 $router->get('/gestion/dossiers/{reference}', [GestionDossiers::class, 'show'], $dossiers);
 $router->post('/gestion/dossiers/{reference}', [GestionDossiers::class, 'update'], $dossiers);
 $router->post('/gestion/dossiers/{reference}/attribution', [GestionDossiers::class, 'assign'], $dossiers);
 $router->get('/gestion/dossiers/{reference}/pieces/{id}', [GestionDossiers::class, 'document'], $dossiers);
+// 2C (N10) : cocher une étape (traitement affecté ou administrateur, contrôlé dans l'action)
+$router->post('/gestion/dossiers/{reference}/etapes/{id}', [GestionDossiers::class, 'etape'], $dossiers);
+$router->post('/gestion/dossiers/{reference}/pieces-attendues', [GestionDossiers::class, 'addRequirement'], $dossiers);
+$router->get('/gestion/finance', [GestionFinance::class, 'index'], ['auth', 'acces:finance']);
+$router->get('/gestion/dossiers/{reference}/finance', [GestionFinance::class, 'show'], ['auth', 'acces:finance']);
+$router->post('/gestion/dossiers/{reference}/finance', [GestionFinance::class, 'save'], ['auth', 'acces:finance']);
+$router->get('/gestion/dossiers/{reference}/finance/recus/{number}', [GestionFinance::class, 'receipt'], ['auth', 'acces:finance']);
+$router->post('/gestion/dossiers/{reference}/suivi', [GestionDossiers::class, 'followUp'], $dossiers);
+$router->post('/gestion/dossiers/{reference}/pieces-attendues/{id}', [GestionDossiers::class, 'reviewRequirement'], $dossiers);
+$router->get('/gestion/dossiers/{reference}/tuteurs', [GestionTuteurs::class, 'show'], $dossiers);
+$router->post('/gestion/dossiers/{reference}/tuteurs', [GestionTuteurs::class, 'grant'], $dossiers);
+$router->post('/gestion/dossiers/{reference}/tuteurs/{id}/revoquer', [GestionTuteurs::class, 'revoke'], $dossiers);
+// Personnes et recherche globale (phase 2, 2A) : périmètre d'Access::personnesSql(), refus journalisés
+$personnes = ['auth', 'acces:personnes'];
+$router->get('/gestion/personnes', [GestionPersonnes::class, 'index'], $personnes);
+$router->get('/gestion/accueil', [GestionAccueil::class, 'index'], ['auth', 'acces:accueil-agence']);
+$router->post('/gestion/accueil', [GestionAccueil::class, 'register'], ['auth', 'acces:accueil-agence']);
+$router->post('/gestion/accueil/{id}', [GestionAccueil::class, 'update'], ['auth', 'acces:accueil-agence']);
+$router->get('/gestion/doublons', [GestionAccueil::class, 'duplicates'], ['auth', 'acces:doublons']);
+$router->post('/gestion/doublons', [GestionAccueil::class, 'merge'], ['auth', 'acces:doublons']);
+$router->get('/gestion/personnes/nouvelle', [GestionPersonnes::class, 'create'], $personnes);
+$router->post('/gestion/personnes/nouvelle', [GestionPersonnes::class, 'store'], $personnes);
+$router->get('/gestion/personnes/{id}', [GestionPersonnes::class, 'show'], $personnes);
+// 2C : note sur la personne (aucune route de modification ni de suppression, N4) et ouverture d'un dossier (E7)
+$router->post('/gestion/personnes/{id}/notes', [GestionPersonnes::class, 'noter'], $personnes);
+$router->post('/gestion/personnes/{id}/dossier', [GestionPersonnes::class, 'ouvrirDossier'], $personnes);
+$router->get('/gestion/recherche', [GestionRecherche::class, 'index'], ['auth', 'acces:gestion']);
+$prospects = ['auth', 'acces:prospects'];
+$router->get('/gestion/prospects', [GestionProspects::class, 'index'], $prospects);
+$router->post('/gestion/prospects', [GestionProspects::class, 'store'], $prospects);
+$router->post('/gestion/prospects/attribuer', [GestionProspects::class, 'assign'], $prospects);
+$router->get('/gestion/prospects/campagnes', [GestionProspects::class, 'catalog'], $prospects);
+$router->post('/gestion/prospects/campagnes', [GestionProspects::class, 'createCatalog'], $prospects);
+$router->get('/gestion/prospects/importer', [GestionProspects::class, 'import'], $prospects);
+$router->post('/gestion/prospects/importer', [GestionProspects::class, 'preview'], $prospects);
+$router->post('/gestion/prospects/importer/confirmer', [GestionProspects::class, 'commitImport'], $prospects);
+$router->get('/gestion/prospects/{id}', [GestionProspects::class, 'show'], $prospects);
+$router->post('/gestion/prospects/{id}', [GestionProspects::class, 'update'], $prospects);
 $router->get('/gestion/rendez-vous', [GestionRendezVous::class, 'index'], ['auth', 'acces:rendez-vous']);
+$router->post('/gestion/rendez-vous/disponibilites', [GestionRendezVous::class, 'saveAvailability'], ['auth', 'acces:rendez-vous']);
+$router->post('/gestion/rendez-vous/durees', [GestionRendezVous::class, 'saveDuration'], ['auth', 'acces:rendez-vous']);
 $router->post('/gestion/rendez-vous/{reference}', [GestionRendezVous::class, 'update'], ['auth', 'acces:rendez-vous']);
+// 2C (E5, N3) : compte rendu d'un entretien
+$router->get('/gestion/rendez-vous/{reference}/compte-rendu', [GestionRendezVous::class, 'compteRendu'], ['auth', 'acces:rendez-vous']);
+$router->post('/gestion/rendez-vous/{reference}/compte-rendu', [GestionRendezVous::class, 'enregistrerCompteRendu'], ['auth', 'acces:rendez-vous']);
 $router->get('/gestion/messages', [GestionMessages::class, 'index'], ['auth', 'acces:messages']);
 $router->post('/gestion/messages/{id}', [GestionMessages::class, 'update'], ['auth', 'acces:messages']);
 $router->get('/gestion/e-mails', [GestionMessages::class, 'mails'], ['auth', 'acces:e-mails']);
@@ -136,6 +202,26 @@ $router->get('/gestion/equipe', [GestionEquipe::class, 'index'], ['auth', 'acces
 $router->post('/gestion/equipe', [GestionEquipe::class, 'store'], ['auth', 'acces:equipe']);
 $router->post('/gestion/equipe/{id}', [GestionEquipe::class, 'update'], ['auth', 'acces:equipe']);
 $router->get('/gestion/journal', [GestionEquipe::class, 'journal'], ['auth', 'acces:journal']);
+// 2C (E8, E9, N5) : modèles de procédure, administrateur seulement
+// Phase 7, lot 7A : messages de l'équipe (liens WhatsApp ou e-mail, journalisés) et leurs modèles
+$router->get('/gestion/personnes/{id}/message', [GestionMessagesEquipe::class, 'form'], $personnes);
+$router->post('/gestion/personnes/{id}/message', [GestionMessagesEquipe::class, 'ouvrir'], $personnes);
+$router->get('/gestion/messages-modeles', [GestionMessagesEquipe::class, 'modeles'], ['auth', 'acces:messages-modeles']);
+$router->post('/gestion/messages-modeles', [GestionMessagesEquipe::class, 'enregistrerModele'], ['auth', 'acces:messages-modeles']);
+// Phase 7, lot 7B : pilotage et exports CSV journalisés
+$router->get('/gestion/pilotage', [GestionPilotage::class, 'index'], ['auth', 'acces:pilotage']);
+$router->get('/gestion/exports/{type}', [GestionPilotage::class, 'export'], ['auth', 'acces:exports']);
+// Phase 7, lot 7C : données personnelles (export JSON, anonymisation) et durées de conservation, administrateur
+$donnees = ['auth', 'acces:donnees-personnelles'];
+$router->get('/gestion/personnes/{id}/donnees', [GestionDonnees::class, 'show'], $donnees);
+$router->get('/gestion/personnes/{id}/donnees/export', [GestionDonnees::class, 'export'], $donnees);
+$router->post('/gestion/personnes/{id}/anonymiser', [GestionDonnees::class, 'anonymiser'], $donnees);
+$router->get('/gestion/conservation', [GestionDonnees::class, 'conservation'], ['auth', 'acces:conservation']);
+$router->get('/gestion/modeles', [GestionModeles::class, 'index'], ['auth', 'acces:modeles']);
+$router->post('/gestion/modeles', [GestionModeles::class, 'store'], ['auth', 'acces:modeles']);
+$router->get('/gestion/modeles/nouveau', [GestionModeles::class, 'create'], ['auth', 'acces:modeles']);
+$router->get('/gestion/modeles/{id}', [GestionModeles::class, 'show'], ['auth', 'acces:modeles']);
+$router->post('/gestion/modeles/{id}', [GestionModeles::class, 'update'], ['auth', 'acces:modeles']);
 
 // Transition /admin/ → /gestion/ (docs/gestion-plan.md §2.3) : GET en 302 temporaire avec les filtres conservés
 // (301 après validation de la phase 1) ; POST de compatibilité : même traitement, mêmes droits, même jeton CSRF.

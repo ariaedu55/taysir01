@@ -18,7 +18,11 @@ $dateLabel = $days[(int) $date->format('N')] . ' ' . $date->format('j') . ' ' . 
             <span class="confirmation-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
             <p class="kicker">Référence <?= e($appointment['reference']) ?></p>
             <h1 id="confirmation-titre">Merci <?= e($appointment['first_name']) ?>, <em>c’est noté</em></h1>
-            <p>Votre demande de rendez-vous est enregistrée. Un conseiller vous contacte au <strong><?= e($appointment['phone']) ?></strong> pour confirmer l’heure exacte.</p>
+            <?php if ($appointment['status'] === 'confirme'): ?>
+                <p>Votre rendez-vous est confirmé à <strong><?= e(\App\Models\Appointment::local($appointment['starts_at_utc'], \App\Models\Appointment::zone($appointment['agency_id'] ? (int) $appointment['agency_id'] : null), 'H:i')) ?></strong>, heure de <?= e(\App\Models\Appointment::city($appointment['agency_id'] ? (int) $appointment['agency_id'] : null)) ?>.</p>
+            <?php else: ?>
+                <p>Votre demande de rendez-vous est enregistrée. Un conseiller vous contacte au <strong><?= e($appointment['phone']) ?></strong> pour confirmer l’heure exacte.</p>
+            <?php endif; ?>
             <dl class="confirmation-summary">
                 <div><dt>Objet</dt><dd><?= e(Appointment::MOTIVES[$appointment['motive']] ?? '') ?></dd></div>
                 <div><dt>Échange</dt><dd><?= e(Appointment::MODES[$appointment['mode']] ?? '') ?></dd></div>

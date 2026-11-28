@@ -132,8 +132,8 @@ if ($onglets === []):
                         <span class="g-badge is-alerte"><span class="g-dot is-alerte"></span>À valider par le traitement</span>
                     <?php elseif ($etat === 'recue'): ?>
                         <button class="g-btn g-btn-sm" type="button" data-g-demo="apercu" data-g-message="Aperçu de la pièce (journalisé dans l’historique des accès)."><?= gestion_icone('eye', 15) ?> Voir</button>
-                        <button class="g-btn g-btn-sm" type="button" data-g-demo="refuser">Refuser</button>
-                        <button class="g-btn g-btn-sm g-btn-primary" type="button" data-g-demo="valider"><?= gestion_icone('check', 15) ?> Valider</button>
+                        <button class="g-btn g-btn-sm g-btn-danger" type="button" data-g-demo="refuser">Refuser</button>
+                        <button class="g-btn g-btn-sm g-btn-success" type="button" data-g-demo="valider"><?= gestion_icone('check', 15) ?> Valider</button>
                     <?php elseif ($etat === 'manquante'): ?>
                         <span class="g-badge is-neutre"><span class="g-dot is-neutre"></span><?= e($etatLib) ?></span>
                         <button class="g-btn g-btn-sm" type="button" data-g-demo="relance" data-g-message="Relance envoyée au client pour cette pièce.">Relancer</button>
@@ -147,7 +147,7 @@ if ($onglets === []):
                             <textarea class="g-textarea" placeholder="Ex. : relevé illisible, merci d’envoyer un scan en couleur." aria-describedby="err-<?= e(md5($piece)) ?>"></textarea>
                         </label>
                         <p class="g-field-error" id="err-<?= e(md5($piece)) ?>" hidden>Indiquez le motif : la cliente le reçoit pour corriger sa pièce.</p>
-                        <div><button class="g-btn g-btn-sm g-btn-dark" type="button" data-g-demo="refuser-envoyer">Refuser et prévenir la cliente</button></div>
+                        <div><button class="g-btn g-btn-sm g-btn-danger" type="button" data-g-demo="refuser-envoyer">Refuser et prévenir la cliente</button></div>
                     </div>
                 <?php endif; ?>
             </li>
@@ -190,7 +190,7 @@ if ($onglets === []):
 <?php if (in_array('paiements', $onglets, true)): ?>
 <section class="g-tabpanel" id="volet-paiements" role="tabpanel" aria-labelledby="tab-paiements" hidden>
     <div class="g-card">
-        <div class="g-card-head"><h3>Échéancier</h3><button class="g-btn g-btn-sm g-btn-primary" type="button" data-g-demo="reglement" data-g-message="Règlement enregistré : reçu DKR-2027-000231 généré et envoyé.">Enregistrer un règlement</button></div>
+        <div class="g-card-head"><h3>Échéancier</h3><button class="g-btn g-btn-sm g-btn-success" type="button" data-g-demo="reglement" data-g-message="Règlement enregistré : reçu DKR-2027-000231 généré et envoyé.">Enregistrer un règlement</button></div>
         <table class="g-pay">
             <?php foreach ($fiche['paiements'] as [$libelle, $montant, $quand, $etat]): ?>
                 <?php [$t, $l] = ['paye' => ['succes', 'Payé'], 'du' => ['alerte', 'Dû'], 'avenir' => ['neutre', 'À venir']][$etat]; ?>
@@ -218,7 +218,7 @@ if ($onglets === []):
         <div style="display:flex;flex-wrap:wrap;align-items:center;gap:1rem">
             <label><input type="radio" name="visibilite" checked> Interne (équipe)</label>
             <label><input type="radio" name="visibilite"> Partagée avec la cliente</label>
-            <button class="g-btn g-btn-dark" type="button" data-g-demo="note" data-g-message="Note ajoutée au dossier.">Ajouter</button>
+            <button class="g-btn g-btn-primary" type="button" data-g-demo="note" data-g-message="Note ajoutée au dossier.">Ajouter</button>
         </div>
     </form>
 </section>

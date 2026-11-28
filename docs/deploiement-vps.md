@@ -197,6 +197,8 @@ Le site est en ligne : **https://taysir.goo-bridge.com**.
 bash /home/jomas/taysir/bin/deploy-goo-bridge.sh
 ```
 
+Pour la mise en service des migrations 011 à 024 et de la nouvelle interface, suivre l’[ordre de mise à jour et de restauration](mise-en-service-9c.md) avant de lancer la commande.
+
 **Créer le compte administrateur**, sur le VPS :
 ```bash
 cd /home/jomas/taysir
@@ -206,3 +208,11 @@ sudo -u jomas /usr/local/apps/php84/bin/php bin/create-admin.php
 **Activer l'envoi des e-mails** : compléter `config/mail.local.php` à partir de `config/mail.local.example.php` (SMTP). Ajouter ensuite la tâche planifiée `bin/send-mails.php`, toutes les minutes, pour l'utilisateur `jomas` (depuis Webuzo, onglet « Cron Jobs »).
 
 Le domaine n'apparaît pas dans le panneau Webuzo, car il a été configuré sans clé d'API. Il ne faut pas le recréer dans Webuzo : le virtual host ferait doublon.
+
+## Mise en ligne de l’espace équipe 1B (27 novembre 2026)
+
+- GitHub `main` et le VPS utilisent le commit `403c4dd`. La branche de publication contient la 1B et ses correctifs de préproduction. Les travaux sur l’assistant restent dans leur branche de travail.
+- Une sauvegarde compressée de `jomas_taysir` a été créée et contrôlée avant le déploiement. Elle est accessible à root dans `/root/taysir-deploy-Gu6z4c/jomas_taysir.sql.gz`.
+- Les migrations 007 à 010 sont appliquées et le service PHP-FPM est actif. L’accueil, la connexion, les destinations, le blog et le formulaire de rendez-vous répondent en HTTPS. `/admin/` redirige vers `/gestion/`, les espaces privés demandent une connexion et la maquette répond 404.
+- Le robot exécuté sur le VPS avec un compte SQL temporaire et une base fictive a réussi ses 83 contrôles. Le dossier et la base de recette ont été supprimés, puis le compte SQL temporaire a été retiré.
+- La production compte zéro administrateur actif. La création du premier compte se fait avec `bin/create-admin.php` sous l’utilisateur du site, comme indiqué plus haut.

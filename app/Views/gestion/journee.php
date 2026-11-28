@@ -15,7 +15,7 @@ use App\Services\Access;
 
 $jours = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 $mois = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-$aujourdhui = ucfirst($jours[(int) date('w')]) . ' ' . date('j') . ' ' . $mois[(int) date('n')];
+$aujourdhui = ucfirst($jours[(int) $today->format('w')]) . ' ' . $today->format('j') . ' ' . $mois[(int) $today->format('n')];
 $famille = ['admin' => 'jour', 'secretaire' => 'rdv', 'prospection' => 'pro', 'commerciale' => 'pro', 'conseiller' => 'ori',
     'orientation' => 'ori', 'traitement' => 'ok', 'comptable' => 'fin'][$me['role']] ?? 'neutre';
 $enCours = (int) ($counts['nouvelle'] ?? 0) + (int) ($counts['en-cours'] ?? 0) + (int) ($counts['attente-client'] ?? 0);
@@ -27,7 +27,7 @@ if ($dossiers) {
     $kpis[] = ['En attente du client', (int) ($counts['attente-client'] ?? 0), 'ech', 'clock'];
 }
 if (isset($compteurs['rendez-vous'])) {
-    $kpis[] = ['Rendez-vous à confirmer', $compteurs['rendez-vous'], 'ori', 'calendar'];
+    $kpis[] = [$me['role'] === 'commerciale' ? 'Propositions en attente' : 'Rendez-vous à confirmer', $compteurs['rendez-vous'], 'ori', 'calendar'];
 }
 if (isset($compteurs['messages'])) {
     $kpis[] = ['Messages à traiter', $compteurs['messages'], 'pro', 'chat'];
@@ -41,13 +41,31 @@ $ligne = static function (array $r): string {
         . '<div class="g-task-actions"><a class="g-btn g-btn-sm" href="' . e(url('/gestion/dossiers/' . $r['reference'] . '/')) . '">Ouvrir ' . gestion_icone('arrow', 15) . '</a></div></li>';
 };
 ?>
-<section class="g-hello is-<?= e($famille) ?>">
-    <div>
-        <h2>Bonjour <?= e($me['first_name']) ?></h2>
-        <p><?= e($aujourdhui) ?></p>
+<section class="g-hello g-day-brief is-<?= e($famille) ?>" aria-labelledby="journee-priorite">
+    <span class="g-day-icon"><?= gestion_icone($priorite[2] ?? 'sun', 24) ?></span>
+    <div class="g-day-copy">
+        <p class="g-day-date"><?= e($aujourdhui) ?> · <?= e(Access::libelle($me['role'])) ?></p>
+        <h2 id="journee-priorite"><?= e($priorite[0] ?? 'Bonjour ' . $me['first_name']) ?></h2>
     </div>
-    <p class="g-mission is-<?= e($famille) ?>"><span class="g-dot" aria-hidden="true"></span><?= e(Access::libelle($me['role'])) ?></p>
+    <?php if ($priorite): ?><a class="g-btn g-btn-primary g-day-action" href="<?= e(url($priorite[3])) ?>"><?= e($priorite[1]) ?> <?= gestion_icone('arrow', 16) ?></a><?php endif; ?>
 </section>
+
+<?php if ($prospects !== null): ?>
+    <div class="g-kpis">
+        <?php $commercial = $me['role'] === 'commerciale'; ?>
+        <a class="g-kpi g-prospect-kpi is-pro" href="<?= e(url('/gestion/prospects/')) ?>">
+            <span class="g-kpi-icon"><?= gestion_icone('users') ?></span><strong><?= (int) $prospects['total'] ?></strong><span class="g-kpi-label"><?= $commercial ? 'Mes prospects' : 'Prospects collectés' ?></span>
+        </a>
+        <a class="g-kpi g-prospect-kpi is-ech" href="<?= e(g_filtre('/gestion/prospects/', ['vue' => $commercial ? 'relances' : 'libres'])) ?>">
+            <span class="g-kpi-icon"><?= gestion_icone($commercial ? 'clock' : 'queue') ?></span><strong><?= (int) $prospects[$commercial ? 'relances' : 'libres'] ?></strong><span class="g-kpi-label"><?= $commercial ? 'Relances à faire' : 'Non attribués' ?></span>
+        </a>
+        <?php if ($commercial): ?>
+            <a class="g-kpi g-prospect-kpi is-ok" href="<?= e(g_filtre('/gestion/prospects/', ['vue' => 'transmis'])) ?>">
+                <span class="g-kpi-icon"><?= gestion_icone('check') ?></span><strong><?= $prospects['total'] ? (int) round(100 * $prospects['transmis'] / $prospects['total']) . '%' : '—' ?></strong><span class="g-kpi-label">Taux de transmission</span>
+            </a>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 
 <?php if ($kpis !== []): ?>
     <div class="g-kpis">
@@ -61,7 +79,8 @@ $ligne = static function (array $r): string {
     </div>
 <?php endif; ?>
 
-<div class="g-grid g-grid-2">
+<div class="g-grid<?= $dossiers || $agenda ? ' g-grid-2' : '' ?>">
+    <?php if ($dossiers): ?>
     <div class="g-grid">
         <?php if ($affectable): ?>
             <section class="g-card is-ok" aria-labelledby="mes-dossiers">
@@ -89,40 +108,37 @@ $ligne = static function (array $r): string {
                     <ul class="g-tasks"><?php foreach ($recents as $r) { echo $ligne($r); } ?></ul>
                 <?php endif; ?>
             </section>
-        <?php else: ?>
-            <section class="g-card is-pro" aria-labelledby="bientot">
-                <div class="g-card-head"><h3 id="bientot"><span class="g-head-icon" aria-hidden="true"><?= gestion_icone('target', 18) ?></span>Votre espace arrive</h3></div>
-                <p class="g-muted" style="margin:0">Les écrans de votre poste (prospects, établissements, campagnes, appels) sont prévus en phase 6 du plan. Votre compte est prêt : vous les retrouverez ici dès leur mise en service.</p>
-            </section>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <div class="g-grid">
-        <?php if ($rdv !== []): ?>
+        <?php partial('gestion-task-list', ['tasks' => $tasks, 'today' => $today->format('Y-m-d')]); ?>
+        <?php if ($deadlines !== []): ?>
+            <section class="g-card" aria-labelledby="echeances-journee">
+                <div class="g-card-head"><h3 id="echeances-journee">Échéances des dossiers</h3></div>
+                <ul class="g-agenda">
+                    <?php foreach ($deadlines as $deadline): ?>
+                        <li><time datetime="<?= e($deadline['due_date']) ?>"><?= e(g_date($deadline['due_date'])) ?></time>
+                            <div><a href="<?= e(url('/gestion/dossiers/' . $deadline['reference'] . '/#suivi-dossier')) ?>"><?= e($deadline['title']) ?></a></div></li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+        <?php endif; ?>
+        <?php partial('gestion-task-form', ['me' => $me]); ?>
+        <?php if ($agenda): ?>
             <section class="g-card is-ori" aria-labelledby="rdv">
-                <div class="g-card-head"><h3 id="rdv"><span class="g-head-icon" aria-hidden="true"><?= gestion_icone('calendar', 18) ?></span>Rendez-vous à confirmer</h3><a href="<?= e(url('/gestion/rendez-vous/?statut=demande')) ?>">Agenda</a></div>
+                <div class="g-card-head"><h3 id="rdv"><span class="g-head-icon" aria-hidden="true"><?= gestion_icone('calendar', 18) ?></span>Rendez-vous du jour</h3><a href="<?= e(url('/gestion/rendez-vous/?jour=' . $today->format('Y-m-d'))) ?>">Agenda</a></div>
+                <?php if (!$rdv): ?><p class="g-empty">Aucun rendez-vous prévu aujourd’hui.</p><?php endif; ?>
                 <ul class="g-agenda">
                     <?php foreach ($rdv as $a): ?>
-                        <li class="is-mine"><time><?= e(date('d/m', strtotime($a['preferred_date']))) ?></time>
-                            <div><strong><?= e($a['first_name'] . ' ' . $a['last_name']) ?></strong><span><?= e(Appointment::MOTIVES[$a['motive']] ?? '') ?> · <?= $a['preferred_slot'] === 'matin' ? 'matin' : 'après-midi' ?></span></div>
+                        <?php $agency = isset($a['agency_id']) ? (int) $a['agency_id'] : null; ?>
+                        <li class="is-mine"><time><?= e(Appointment::local($a['starts_at_utc'], Appointment::zone($agency), 'H:i')) ?></time>
+                            <div><strong><?= e($a['first_name'] . ' ' . $a['last_name']) ?></strong><span><?= e(Appointment::MOTIVES[$a['motive']] ?? '') ?> · <?= e(Appointment::city($agency)) ?></span></div>
                         </li>
                     <?php endforeach; ?>
                 </ul>
             </section>
         <?php endif; ?>
-        <section class="g-card" aria-labelledby="perimetre">
-            <div class="g-card-head"><h3 id="perimetre"><span class="g-head-icon" aria-hidden="true"><?= gestion_icone('lock', 18) ?></span>Votre périmètre</h3></div>
-            <p class="g-muted" style="margin:0;font-size:.84rem">
-                <?php if (in_array($me['role'], ['admin'], true)): ?>
-                    Vous voyez tous les dossiers et toutes les pièces. Chaque téléchargement est inscrit au journal d’audit.
-                <?php elseif (in_array($me['role'], ['secretaire', 'comptable'], true)): ?>
-                    Vous voyez tous les dossiers (en-tête et suivi), sans accès aux pièces des clients.
-                <?php elseif ($affectable): ?>
-                    Vous voyez les dossiers qui vous sont affectés et ceux qui attendent un responsable à votre poste. Les pièces s’ouvrent une fois le dossier pris.
-                <?php else: ?>
-                    Votre poste n’a pas accès aux dossiers clients.
-                <?php endif; ?>
-            </p>
-        </section>
     </div>
 </div>

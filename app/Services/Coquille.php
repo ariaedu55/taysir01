@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Core\Database;
+use App\Models\Appointment;
+use App\Models\Prospect;
 
 /**
  * Données de la coquille de l'espace équipe (gabarit layouts/espace.php) pour le compte connecté :
@@ -35,8 +37,10 @@ final class Coquille
             'agence' => self::agence($user),
             'nav' => $nav,
             'actif' => $actif,
-            'raccourci' => Access::peut($user, 'dossiers') ? ['Dossiers', 'folder', '/gestion/dossiers/', 'dossiers'] : null,
-            'recherche' => Access::peut($user, 'dossiers') ? self::recherche($user) : [],
+            'raccourci' => Access::peut($user, 'dossiers') ? ['Dossiers', 'folder', '/gestion/dossiers/', 'dossiers']
+                : (Access::peut($user, 'prospects') ? ['Prospects', 'target', '/gestion/prospects/', 'prospects'] : null),
+            // Recherche globale côté serveur (/gestion/recherche/, 2A) : plus d'index embarqué dans la page
+            'recherche' => Access::peut($user, 'dossiers') || Access::peut($user, 'personnes') || Access::peut($user, 'prospects'),
         ];
     }
 
@@ -52,10 +56,14 @@ final class Coquille
             $compteurs['dossiers'] = (int) $statement->fetchColumn();
         }
         if (Access::peut($user, 'rendez-vous')) {
-            $compteurs['rendez-vous'] = (int) $db->query("SELECT COUNT(*) FROM appointments WHERE status = 'demande'")->fetchColumn();
+            $compteurs['rendez-vous'] = (int) (Appointment::countsByStatus($user)['demande'] ?? 0);
         }
         if (Access::peut($user, 'messages')) {
             $compteurs['messages'] = (int) $db->query("SELECT COUNT(*) FROM contact_messages WHERE status = 'nouveau'")->fetchColumn();
+        }
+        if (Access::peut($user, 'prospects')) {
+            $stats = Prospect::stats($user);
+            $compteurs['prospects'] = (int) $stats[$user['role'] === 'commerciale' ? 'relances' : 'libres'];
         }
         if (Access::peut($user, 'e-mails')) {
             $compteurs['e-mails'] = (int) $db->query("SELECT COUNT(*) FROM mail_outbox WHERE status = 'echec'")->fetchColumn();
@@ -64,27 +72,6 @@ final class Coquille
         return array_filter($compteurs, static fn (int $n): bool => $n > 0);
     }
 
-    /** Index de la recherche Ctrl+K : dossiers du périmètre uniquement (200 plus récents). */
-    private static function recherche(array $user): array
-    {
-        [$sql, $params] = Access::perimetre($user, 'r');
-        $statement = Database::connection()->prepare(
-            "SELECT r.reference, r.first_name, r.last_name, r.phone, r.service, r.destination FROM service_requests r
-             WHERE {$sql} ORDER BY r.updated_at DESC LIMIT 200"
-        );
-        $statement->execute($params);
-        $services = [];
-        foreach (config('services') as $service) {
-            $services[$service['key']] = $service['title'];
-        }
-
-        return array_map(static fn (array $r): array => [
-            'type' => 'Dossier',
-            'titre' => $r['first_name'] . ' ' . $r['last_name'] . ' · ' . ($services[$r['service']] ?? $r['service']),
-            'detail' => $r['reference'] . ($r['destination'] ? ' · ' . $r['destination'] : '') . ' · ' . $r['phone'],
-            'url' => url('/gestion/dossiers/' . $r['reference'] . '/'),
-        ], $statement->fetchAll());
-    }
 
     private static function agence(array $user): string
     {

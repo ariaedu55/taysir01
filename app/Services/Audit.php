@@ -17,6 +17,8 @@ final class Audit
         'connexion' => 'Connexion',
         'acces_refuse' => 'Accès refusé',
         'piece_telechargee' => 'Pièce téléchargée',
+        'acces_tuteur_accorde' => 'Accès tuteur accordé',
+        'acces_tuteur_revoque' => 'Accès tuteur retiré',
         'affectation' => 'Affectation de dossier',
         'poste_change' => 'Changement de poste',
         'compte_desactive' => 'Compte désactivé',
@@ -24,10 +26,19 @@ final class Audit
         'mission_attribuee' => 'Mission attribuée',
         'mission_retiree' => 'Mission retirée',
         'membre_invite' => 'Membre invité',
+        'finance_dossier' => 'Opération financière',
+        'prospect_cree' => 'Prospect enregistré',
+        'prospects_importes' => 'Import de prospects',
+        'suivi_prospect' => 'Suivi de prospection',
+        'message_equipe' => 'Message de l’équipe ouvert',
+        'modele_message' => 'Modèle de message enregistré',
+        'export' => 'Export de données',
+        'export_personne' => 'Export des données d’une personne',
+        'anonymisation' => 'Fiche anonymisée',
     ];
 
     /** @param array<string, scalar|null> $detail */
-    public static function log(string $action, ?string $subjectType = null, ?string $subjectRef = null, array $detail = [], ?int $userId = null): void
+    public static function log(string $action, ?string $subjectType = null, ?string $subjectRef = null, array $detail = [], ?int $userId = null, bool $required = false): void
     {
         try {
             Database::connection()->prepare(
@@ -48,6 +59,9 @@ final class Audit
             if (is_dir($dossier) || @mkdir($dossier, 0770, true)) {
                 @file_put_contents($dossier . '/audit-echecs.log', sprintf("%s\t%s\t%s\t%s\t%s\n",
                     date('c'), $action, (string) $subjectType, (string) $subjectRef, str_replace(["\n", "\t"], ' ', $exception->getMessage())), FILE_APPEND | LOCK_EX);
+            }
+            if ($required) {
+                throw $exception;
             }
         }
     }

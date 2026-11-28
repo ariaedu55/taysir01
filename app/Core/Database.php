@@ -19,6 +19,7 @@ final class Database
             $recette = require BASE_PATH . '/config/recette.php';
             if ($recette !== null) {
                 $c['name'] = $recette['base'];
+                $c['port'] = $recette['port'] ?? $c['port'];
                 if ($recette['user'] !== null) {
                     [$c['user'], $c['password']] = [$recette['user'], $recette['password']];
                 }

@@ -38,3 +38,7 @@ La direction actuelle est décrite dans [refonte-immersive.md](refonte-immersive
 - Les [destinations](destinations-decouverte.md) reprennent ce bandeau photographique avec des panoramas en paysage et portrait. L’annuaire conserve le radar et les cartes d’embarquement. Sur les fiches, le repère de vol indique l’aéroport de référence et la distance à vol d’oiseau.
 - Les [rubriques Offres et Activités](offres-activites.md) utilisent le même bandeau. Chaque sujet possède une illustration dédiée et un lien vers le contenu de la page.
 - Sur téléphone et tablette, la [navigation](navigation-mobile.md) associe un accès illustré aux destinations, des rubriques en accordéon et des actions de compte et de rendez-vous visibles pendant le défilement.
+
+## Espaces client et équipe
+
+Poppins porte l’interface connectée. Les cartes et navigation utilisent des surfaces unies et des touches de couleur par fonction. Les boutons lisent les jetons `--btn-base`, `--btn-ok`, `--btn-warn` et `--btn-danger` dans `public/assets/css/app.css`. Les indicateurs placent le nombre à droite de l’icône et le libellé dessous. Les styles de l’équipe sont dans `public/assets/css/gestion.css`. L’espace client connecté est délimité par `.client-workspace` dans `public/assets/css/gestion-client.css`. Les formulaires et le suivi s’appuient sur `portal.css`. Voir le [contrat et la recette de phase 10](gestion-phase-10.md).

@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Session;
+use App\Models\Person;
 use App\Models\User;
 use App\Services\Notifier;
 
@@ -66,6 +67,8 @@ final class AuthController extends Controller
         }
 
         $user = User::create($data);
+        // Fiche personne du nouveau compte (2A) : toujours une fiche neuve ; un e-mail déjà connu la marque « à rapprocher »
+        Person::pourCompte($user);
         Auth::login($user);
         Notifier::welcome($user);
         Session::flash('_success', 'Bienvenue ' . $user['first_name'] . ', votre espace Taysir est prêt.');

@@ -6,40 +6,101 @@
  * @var array|null  $service
  * @var list<array> $documents
  * @var list<array> $events
- * @var bool        $canAdd
+ * @var bool        $owner, $canReply, $canDeposit, $canDepositAsTutor
+ * @var list<array> $tutorAccesses
  */
 use App\Models\ServiceRequest;
 use App\Services\DocumentStorage;
 
+require_once BASE_PATH . '/app/Views/gestion/icones.php';
+
 $reference = $request['reference'];
 $replyError = errors()['reply'] ?? null;
+$nextPiece = $canDeposit ? array_find($requirements, static fn (array $piece): bool => App\Models\RequestRequirement::isExpired($piece)
+    || in_array($piece['status'], ['manquante', 'refusee'], true)) : null;
 ?>
 <main id="contenu" class="dashboard portal">
-    <section class="wrap dashboard-head">
+    <section class="wrap dashboard-head client-wrap">
         <div data-reveal="up">
             <nav class="breadcrumb" aria-label="Fil d’Ariane">
                 <ol>
                     <li><a href="<?= e(url('/mon-espace/')) ?>">Mon espace</a></li>
-                    <li><a href="<?= e(url('/mon-espace/demandes/')) ?>">Mes demandes</a></li>
+                    <li><a href="<?= e(url($owner ? '/mon-espace/demandes/' : '/mon-espace/demandes/#dossiers-partages')) ?>"><?= $owner ? 'Mes demandes' : 'Dossiers partagés' ?></a></li>
                     <li aria-current="page"><?= e($reference) ?></li>
                 </ol>
             </nav>
             <h1><?= e($service['title'] ?? 'Demande') ?></h1>
             <p class="dashboard-profile">Référence <?= e($reference) ?> · envoyée le <?= e(date('d/m/Y', strtotime($request['created_at']))) ?></p>
+            <?php if (!$owner): ?>
+                <p class="dashboard-profile"><?= e($request['first_name'] . ' ' . $request['last_name']) ?><?= $request['destination'] ? ' · ' . e($request['destination']) : '' ?></p>
+                <p class="dashboard-profile"><?= $canDepositAsTutor ? 'Accès tuteur · Lecture et dépôt de pièces attendues' : 'Accès tuteur · Lecture seule' ?></p>
+            <?php endif; ?>
         </div>
         <div data-reveal="up"><?php partial('status', ['label' => ServiceRequest::statusLabel($request['status']), 'tone' => ServiceRequest::statusTone($request['status'])]); ?></div>
     </section>
 
-    <div class="wrap portal-detail">
+    <?php if ($nextPiece || ($canReply && $request['status'] === 'attente-client')): ?>
+        <div class="client-wrap">
+            <section class="client-next client-tone-amber" aria-labelledby="prochaine-action">
+                <span class="client-icon"><?= gestion_icone($nextPiece ? 'upload' : 'chat', 24) ?></span>
+                <div class="client-next-copy"><p class="client-label">Prochaine action</p><h2 id="prochaine-action"><?= e($nextPiece ? $nextPiece['title'] : 'Répondre à votre conseiller') ?></h2></div>
+                <a class="button primary" href="<?= $nextPiece ? '#piece-' . (int) $nextPiece['id'] : '#repondre-titre' ?>"><?= $nextPiece ? 'Déposer la pièce' : 'Écrire un message' ?> <?= gestion_icone('arrow', 16) ?></a>
+            </section>
+        </div>
+    <?php endif; ?>
+
+    <div class="wrap portal-detail client-wrap">
         <div class="portal-stack">
             <?php partial('flash'); ?>
 
+            <?php if ($requirements !== []): ?>
+                <section class="account glass" id="pieces-attendues" aria-labelledby="pieces-attendues-titre">
+                    <h2 id="pieces-attendues-titre">Pièces attendues</h2>
+                    <?php if ($pieceError = errors()['requirement'] ?? null): ?><p class="field-error" role="alert"><?= e($pieceError) ?></p><?php endif; ?>
+                    <ul class="portal-requirements">
+                        <?php foreach ($requirements as $piece): ?>
+                            <?php $pieceId = (int) $piece['id']; $expired = App\Models\RequestRequirement::isExpired($piece);
+                            $canUpload = $canDeposit && ($expired || in_array($piece['status'], ['manquante', 'refusee'], true)); ?>
+                            <li class="portal-requirement" id="piece-<?= $pieceId ?>">
+                                <div class="portal-requirement-head">
+                                    <h3><?= e($piece['title']) ?></h3>
+                                    <?php partial('requirement-status', ['state' => $expired ? 'expiree' : $piece['status']]); ?>
+                                </div>
+                                <?php if ($piece['refusal_reason']): ?><p><?= nl2br(e($piece['refusal_reason'])) ?></p><?php endif; ?>
+                                <?php if ($piece['expires_on'] ?? null): ?><p>Valable jusqu’au <?= e(date('d/m/Y', strtotime($piece['expires_on']))) ?></p><?php endif; ?>
+                                <?php if ($piece['minimum_valid_until']): ?><p>Validité exigée jusqu’au <?= e(date('d/m/Y', strtotime($piece['minimum_valid_until']))) ?></p><?php endif; ?>
+                                <?php if ($piece['document_id']): ?><a href="<?= e(url('/mon-espace/demandes/' . $reference . '/documents/' . $piece['document_id'] . '/')) ?>">Télécharger la pièce déposée</a><?php endif; ?>
+                                <?php if ($canUpload): ?>
+                                    <form method="post" class="portal-form portal-requirement-form" action="<?= e(url('/mon-espace/demandes/' . $reference . '/pieces-attendues/' . $pieceId . '/')) ?>" enctype="multipart/form-data" data-portal-form>
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="previous_document_id" value="<?= (int) $piece['document_id'] ?>">
+                                        <label class="dropzone dropzone-compact" for="fichier-<?= $pieceId ?>" data-dropzone>
+                                            <strong>Choisir un fichier pour <?= e($piece['title']) ?></strong>
+                                            <span id="format-<?= $pieceId ?>">PDF, JPG ou PNG · 5 Mo maximum</span>
+                                            <input id="fichier-<?= $pieceId ?>" name="documents[]" type="file" accept=".pdf,.jpg,.jpeg,.png"
+                                                required data-max-files="1" data-max-size="<?= DocumentStorage::MAX_SIZE ?>" aria-describedby="format-<?= $pieceId ?>">
+                                        </label>
+                                        <ul class="dropzone-files" data-dropzone-files aria-live="polite"></ul>
+                                        <button class="button portal-requirement-button" type="submit"><?= $piece['status'] === 'manquante' ? 'Déposer la pièce' : 'Envoyer une nouvelle version' ?></button>
+                                    </form>
+                                <?php endif; ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </section>
+            <?php endif; ?>
+
+            <?php partial('request-follow-up', ['request' => $request, 'staff' => false]); ?>
+            <?php if ($owner): ?>
+                <?php $finance = App\Models\CaseFinance::forRequest((int) $request['id']); ?>
+                <?php if ($finance['quote']) partial('case-finance', ['finance' => $finance, 'request' => $request, 'staff' => false]); ?>
+            <?php endif; ?>
             <section class="account glass" aria-labelledby="historique-titre" data-reveal="up">
                 <h2 id="historique-titre">Avancement</h2>
-                <?php partial('request-timeline', ['events' => $events, 'staffView' => false]); ?>
+                <?php partial('request-timeline', ['events' => $events, 'staffView' => false, 'tutorView' => !$owner]); ?>
             </section>
 
-            <?php if ($canAdd): ?>
+            <?php if ($canReply): ?>
                 <section class="account glass" aria-labelledby="repondre-titre" data-reveal="up">
                     <h2 id="repondre-titre">Écrire à votre conseiller</h2>
                     <form class="portal-form portal-reply" method="post" action="<?= e(url('/mon-espace/demandes/' . $reference . '/')) ?>" enctype="multipart/form-data" data-portal-form>
@@ -58,15 +119,42 @@ $replyError = errors()['reply'] ?? null;
                             <ul class="dropzone-files" data-dropzone-files aria-live="polite"></ul>
                         </div>
                         <?php if ($replyError): ?><p class="field-error" id="champ-reponse-erreur"><?= e($replyError) ?></p><?php endif; ?>
-                        <button class="button primary" type="submit">Envoyer</button>
+                        <button class="button primary" type="submit">Envoyer le message</button>
                     </form>
                 </section>
             <?php endif; ?>
         </div>
 
         <aside class="portal-stack">
-            <?php partial('request-summary', ['request' => $request, 'service' => $service]); ?>
+            <?php if ($owner): ?>
+                <?php partial('request-summary', ['request' => $request, 'service' => $service]); ?>
+            <?php endif; ?>
             <?php partial('request-documents', ['documents' => $documents, 'base' => '/mon-espace/demandes/' . $reference . '/documents/']); ?>
+            <?php if ($owner): ?>
+                <section class="account glass" id="acces-tuteurs" aria-labelledby="acces-tuteurs-titre">
+                    <h2 id="acces-tuteurs-titre">Accès tuteurs</h2>
+                    <?php if ($tutorAccesses === []): ?>
+                        <p class="portal-empty">Aucun accès tuteur accordé.</p>
+                    <?php else: ?>
+                        <ul class="portal-requirements">
+                            <?php foreach ($tutorAccesses as $access): ?>
+                                <li class="portal-requirement">
+                                    <h3><?= e($access['first_name'] . ' ' . $access['last_name']) ?></h3>
+                                    <p><?= $access['can_deposit'] ? 'Lecture et dépôt de pièces attendues' : 'Lecture seule' ?><?= $access['account_eligible'] ? '' : ' · accès suspendu' ?></p>
+                                    <details>
+                                        <summary>Retirer cet accès</summary>
+                                        <form method="post" action="<?= e(url('/mon-espace/demandes/' . $reference . '/tuteurs/' . $access['id'] . '/revoquer/')) ?>" novalidate>
+                                            <?= csrf_field() ?>
+                                            <p>Le compte perdra l’accès à ce dossier et à ses pièces.</p>
+                                            <button class="button portal-requirement-button" type="submit">Confirmer le retrait</button>
+                                        </form>
+                                    </details>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </section>
+            <?php endif; ?>
         </aside>
     </div>
 </main>

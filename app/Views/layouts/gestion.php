@@ -20,6 +20,8 @@ $lien = static fn (?string $page): string => match ($page) {
     'journee' => url($base . '/'),
     'dossiers' => url($base . '/dossiers/'),
     'prospects' => url($base . '/prospects/'),
+    'agenda' => url($base . '/agenda/'),
+    'personnes' => url($base . '/personnes/'),
     default => '#',
 };
 $creer = [
@@ -58,7 +60,7 @@ $initiales = mb_substr($prenom, 0, 1) . mb_substr($nom, 0, 1);
     <link rel="icon" href="<?= e(asset('images/brand/logo-navy.webp')) ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prata&amp;family=Poppins:wght@400;500;600;700;800&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;display=swap">
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('css/gestion.css')) ?>">
     <script src="<?= e(asset('js/gestion.js')) ?>" defer></script>

@@ -1,16 +1,17 @@
-# Système de gestion Taysir : plan d'action et d'implémentation (version 2.3)
+# Système de gestion Taysir : plan d'action et d'implémentation (version 2.4)
 
 - **Version 1** : 26 novembre 2026.
 - **Version 2** : 26 novembre 2026, après la revue de l'utilisateur, avec ses 7 observations (§0).
 - **Version 2.1** : direction validée par l'utilisateur ; ajout du §12 (parcours et expérience par rôle, décisions sur les fonctions de GAOV, maquette navigable à valider en phase 1, compte rendu en trois parties).
 - **Version 2.2** : référence = **les 8 postes réels de GAOV** (rôles, affectations, parcours) ; matrice des droits par poste ; accès Client commun avec parcours *études* et *voyage* ; écrans mutualisés ; points tranchés par les données de GAOV et points à décider (§3.6) ; faille de droits de GAOV en production (§3.7).
 - **Version 2.3** : comptes GAOV = comptes de test, carte blanche ; décisions arrêtées sur les comptes, les cumuls, les agences et la matrice (§3.6) ; reprise limitée aux référentiels.
+- **Version 2.4** (28 novembre 2026, décision de l’utilisateur) : **plus aucun travail sur l’ancienne application GAOV**. Elle n’est plus utilisée ; l’agence travaille sur la suite Office en attendant le nouveau système. La reprise GAOV (§9) est abandonnée, la phase 9 devient la recette d’ensemble, et une **dernière phase 10, refonte des interfaces**, est ajoutée.
 
 **Objectif.** Refondre la gestion interne (ancienne application GAOV, voir [gaov-readme.md](gaov-readme.md)) **dans la plateforme Taysir**, sans copier GAOV :
 - un seul projet PHP MVC, un seul domaine ;
 - la connexion publique commune ;
 - l'espace client `/mon-espace/` et l'espace équipe `/gestion/` ;
-- la charte du site : blanc et gris clair, texte noir, rouge Taysir pour les actions, Prata et Poppins, aucun dégradé ;
+- la charte du site : blanc et gris clair, texte noir, rouge Taysir pour les actions, aucun dégradé ; Prata et Poppins sur le site public, **Poppins seule dans la gestion** ;
 - une navigation repensée ;
 - les défauts de GAOV corrigés ;
 - les fonctions indispensables ajoutées.
@@ -254,7 +255,7 @@ Les comptes, clients et rendez-vous de test ne sont **pas** importés.
 - **Liens** (`person_relations`) : parent ou tuteur légal d'un élève.
   - Le lien est **vérifié par l'équipe** (pièce justifiant le lien, saisie par un conseiller), puis activé avec ses droits : lire, déposer une pièce, payer.
   - Un élève majeur peut retirer l'accès de son parent.
-- **Dossier** (`cases`) : un projet de la personne, défini par un service, une destination, une rentrée et un responsable.
+- **Dossier** : un projet de la personne, défini par un service, une destination, une rentrée et un responsable. **Décision D1 de la phase 2 (27/11/2026)** : la table `service_requests` devient la table des dossiers, enrichie de `person_id`, du modèle de procédure et des étapes ; il n’y a pas de table `cases` séparée.
   - Une personne peut avoir **plusieurs dossiers en parallèle**, par exemple France et Canada pour la même rentrée, et d'autres plus tard pour une autre rentrée.
   - Chaque dossier a ses étapes, ses pièces, ses réponses et son résultat.
 - **Coordonnées partagées** : un téléphone ou un e-mail peut être commun à plusieurs personnes (un parent pour ses enfants). L'unicité de l'e-mail ne s'impose qu'aux **comptes**, pas aux personnes.
@@ -267,11 +268,11 @@ Les comptes, clients et rendez-vous de test ne sont **pas** importés.
 
 ### 4.3 Correspondance « demandes actuelles → dossiers », sans double suivi
 
-En phase 3, une migration :
-- crée **une personne** par compte client existant ;
-- transforme **chaque demande** (`service_requests`) en **dossier** : même référence, même statut converti, même responsable, mêmes pièces, mêmes événements.
+Avec la décision D1, il n'y a **pas de conversion** : les demandes **sont** les dossiers.
+- **Phase 2** (migration 011) : création d'**une personne** par compte client existant, et rattachement de ses demandes et de ses rendez-vous (`person_id`). Les rendez-vous sans compte sont rattachés par correspondance prudente, sans fusion ; voir `gestion-phase-2.md` §9, C5.
+- **Phase 3** : compléments des dossiers (pièces attendues, échéances, résultats) sur la même table.
 
-Il n'existe ensuite qu'un **seul** suivi. Le formulaire public de demande crée directement un dossier. Les anciennes adresses de demande, côté client et côté équipe, redirigent vers le dossier.
+Il n'existe donc qu'un **seul** suivi. Le formulaire public de demande crée directement un dossier. Les anciennes adresses de demande, côté client et côté équipe, redirigent vers le dossier.
 
 ### 4.4 Cycle de vie et conservation, à décider **avant** toute fonction de suppression
 
@@ -326,7 +327,7 @@ Il n'existe ensuite qu'un **seul** suivi. Le formulaire public de demande crée 
 
 ### Phase 3 : parcours prioritaire, partie B (du dossier aux rappels)
 
-- **Migration** des demandes existantes vers les dossiers (§4.3).
+- **Compléments des dossiers** sur la même table (D1, §4.3).
 - **Côté client** : pièces attendues, dépôt, état du dossier dans `/mon-espace/`.
 - **Côté équipe** : validation ou refus motivé des pièces, contrôle de validité selon la destination et la démarche (§6.3).
 - **Échéances et rappels par e-mail**, au client et à l'équipe, par tâche cron.
@@ -350,9 +351,11 @@ Il n'existe ensuite qu'un **seul** suivi. Le formulaire public de demande crée 
 ### Phase 5 : finance V1 (enregistrement, sans encaissement en ligne)
 
 - Périmètre (§7) : **devis, échéancier, enregistrement d'un règlement déjà reçu, reçu PDF numéroté.**
-- Conditions préalables : décisions sur les responsables, les corrections, les remboursements, la devise et la numérotation.
+- La version locale applique les règles provisoires du [document de phase](gestion-phase-5.md) pour les droits, les corrections, la devise et la numérotation.
 
 ### Phase 6 : prospection scolaire
+
+- **Agenda de la commerciale** (§3.5, décision D2) : les rendez-vous des prospects attribués s’affichent dans le module commun. L’accueil confirme et affecte les propositions.
 
 - Établissements et campagnes.
 - Import Excel avec dédoublonnage et rapport d'écarts.
@@ -365,11 +368,37 @@ Il n'existe ensuite qu'un **seul** suivi. Le formulaire public de demande crée 
 - Tableaux de bord par rôle, exports journalisés.
 - Procédure d'effacement et d'export des données d'une personne.
 
+État au 28/11/2026 : modèles de messages et liens WhatsApp ou e-mail journalisés (7A), pilotage et exports CSV journalisés (7B), export JSON, anonymisation et liste des durées de conservation (7C) faits ; détail dans [gestion-phase-7.md](gestion-phase-7.md). L'envoi de SMS attend le choix d'un fournisseur.
+
 ### Phase 8 : signature en ligne et encaissement intégré (facultatif)
 
 À lancer seulement après le choix des prestataires, des modalités de signature et un environnement de test fourni par le prestataire.
 
-### Phase 9 : reprise GAOV, recette globale, mise en service (§9)
+### Phase 9 : recette d’ensemble et préparation de la mise en service
+
+- Aucune reprise de données GAOV (version 2.4) : les référentiels (destinations, établissements, modèles) sont saisis par l’agence dans la nouvelle plateforme.
+- Solder la dette de test notée à chaque étape (2C, 2D, phase 7…) : droits de chaque route pour les 8 postes et le client, scénarios métier de bout en bout, moteur cible MariaDB 10.11, migrations 011 à 024 répétées sur une copie de la base de production.
+- Préparer la mise en service : sauvegarde restaurable, ordre des migrations, comptes réels de l’équipe, tâches planifiées (e-mails, rappels).
+
+### Phase 10 : refonte des interfaces (dernière phase)
+
+Les écrans actuels sont fonctionnels mais trop simples : ils ne guident pas assez au premier regard. Cette phase reprend le design de **chaque profil** (client, 8 postes de l’équipe) pour qu’il soit à la fois responsive, intuitif, ergonomique, beau et attractif.
+
+- **Espace client en priorité de soin** : c’est la vitrine de la marque. Le client juge le professionnalisme de l’agence sur cet espace. Il faut donc une finition au niveau du site public : hiérarchie claire, état du dossier compris en un coup d’œil, prochaine action toujours visible.
+- **Lisibilité au premier regard**, pour chaque poste :
+  - une seule action principale par écran, mise en avant ;
+  - les actions secondaires sont groupées ;
+  - chaque bouton dit ce qu’il fait ;
+  - les éléments sont regroupés par tâche, pas par table de la base.
+- **Charte de la gestion**, précisée par l’utilisateur le 28/11 :
+  - **une seule police, Poppins**, pour tous les titres et tous les textes de la gestion ;
+  - mini-cartes de statistiques : **le chiffre sur la même ligne que l’icône** (icône à gauche, chiffre à droite), le libellé dessous ;
+  - couleurs des boutons : bleu pour le courant, vert pour valider, orange pour avertir, rouge seulement pour le danger ;
+  - surfaces teintées, jamais de bordures colorées ni de dégradés ;
+  - affichage compact sur mobile.
+- Méthode :
+  - maquette de l’écran clé de chaque profil, validée avec l’utilisateur avant de décliner ;
+  - puis contrôle visuel complet à 1440, 768 et 375 px, avant la mise en service.
 
 ---
 
@@ -434,7 +463,9 @@ Les règles sont configurées **par destination et par démarche**, sans valeur 
 
 ---
 
-## 9. Reprise des données GAOV, préparée dès maintenant
+## 9. Reprise des données GAOV — abandonnée (version 2.4)
+
+> **Abandonnée le 28/11/2026** : l’ancienne application n’est plus utilisée, rien n’en est repris. Le tableau ci-dessous reste comme historique.
 
 | Donnée GAOV | Volume | Décision | Cible |
 | --- | --- | --- | --- |
@@ -492,15 +523,16 @@ Pour chaque phase, le document « avant » liste les scénarios. Le document « 
 | Phase | Document | État |
 | --- | --- | --- |
 | 0. Cadrage | `gestion-plan.md` (version 2.3) | **validé** : direction acceptée, carte blanche, décisions du §3.6 |
-| 1. Socle sécurisé et coquille | `gestion-phase-1.md` | 1A validée ; 1B validée par la revue (27/11) ; **1B bis : les 4 corrections de la revue faites** (robot 83/83, répétition des migrations 22/22) ; mise en ligne en attente de validation ; ni commit ni déploiement |
-| 2. Parcours A : rendez-vous → dossier | `gestion-phase-2.md` | à venir |
-| 3. Parcours B : pièces → rappels | `gestion-phase-3.md` | à venir |
-| 4. Accueil et doublons | `gestion-phase-4.md` | à venir |
-| 5. Finance V1 | `gestion-phase-5.md` | à venir (décisions du §7) |
-| 6. Prospection scolaire | `gestion-phase-6.md` | à venir |
-| 7. Communication, pilotage, conformité | `gestion-phase-7.md` | à venir (choix du SMS) |
-| 8. Signature et encaissement en ligne | `gestion-phase-8.md` | facultatif, sur décision |
-| 9. Reprise GAOV et mise en service | `gestion-phase-9.md` | à venir |
+| 1. Socle sécurisé et coquille | `gestion-phase-1.md` | 1A et 1B validées ; **1B en production le 27/11/2026** (commit 403c4dd, migrations 007-010) ; validation en conditions réelles en cours |
+| 2. Parcours A : rendez-vous → dossier | `gestion-phase-2.md` | 2.0, 2A et 2B closes en local. 2C codée, tests fonctionnels reportés à la recette d’ensemble. 2D close en local selon la [décision du validateur](validations/2026-11-27-fin-etape-2d.md). Publication de la phase 2 en attente de la recette d’ensemble. |
+| 3. Parcours B : pièces → rappels | `gestion-phase-3.md` | 3A et 3B validées en local. Qualification finale sur le moteur cible et contrôle visuel en attente avant publication. |
+| 4. Accueil et doublons | `gestion-phase-4.md` | Registre et rapprochement manuel disponibles en local. Qualification et cas de fusion avec comptes à suivre. |
+| 5. Finance V1 | `gestion-phase-5.md` | implémentée et testée en local, migration 021 appliquée sur WAMP |
+| 6. Prospection scolaire | `gestion-phase-6.md` | implémentée et testée en local, migration 022 appliquée sur WAMP |
+| 7. Communication, pilotage, conformité | `gestion-phase-7.md` | codée et commitée le 28/11 (7A, 7B, 7C), robot 172/172 ; tests visuels à la recette d’ensemble |
+| 8. Signature et encaissement en ligne | `gestion-phase-8.md` | facultatif, en attente du choix des prestataires |
+| 9. Recette d’ensemble et préparation de la mise en service | `gestion-phase-9.md` | 9A et 9B terminées. 9C qualifiée sur une copie reconstruite à partir du schéma du VPS et sur un jeu fictif riche. Bascule, comptes et SMTP en attente. |
+| 10. Refonte des interfaces | `gestion-phase-10.md` | livrée en local, 57 contrôles d’affichage sur les parcours principaux du client et des huit postes |
 
 ---
 

@@ -12,6 +12,9 @@
  * @var list<array> $documents, $events
  * @var list<string> $prenables, $transmissibles, $liberables Opérations d'affectation permises (Access)
  * @var array       $equipe      Poste => membres actifs
+ * @var list<array> $etapes      Étapes du dossier (2C, N10), vides pour les postes qui ne les lisent pas
+ * @var bool        $peutCocher  Traitement affecté ou administrateur
+ * @var array|null  $modele, $nouvelleVersion
  */
 use App\Models\ServiceRequest;
 use App\Services\Access;
@@ -22,7 +25,7 @@ $labels = ['identity_number' => 'Passeport ou CNI'];
 foreach ($service['fields'] ?? [] as [$name, $label]) {
     $labels[$name] = $label;
 }
-$infos = ['E-mail' => $request['email'], 'Téléphone' => $request['phone']];
+$infos = ['E-mail' => $request['email'] ?? '—', 'Téléphone' => $request['phone'] ?? '—']; // N9 : facultatifs depuis 014
 if ($request['destination']) {
     $infos[$labels['destination'] ?? 'Destination'] = $request['destination'];
 }
@@ -63,12 +66,28 @@ $auteurs = ['client' => 'Client'] + Access::POSTES;
     </div>
     <?php if ($responsable): ?>
         <div class="g-case-actions">
+            <?php if ($me['role'] === 'admin'): ?>
+            <a class="g-btn" href="<?= e(url('/gestion/dossiers/' . $ref . '/tuteurs/')) ?>"><?= gestion_icone('users', 16) ?> Accès tuteurs</a>
+            <?php endif; ?>
+            <?php if ($request['phone']): ?>
             <a class="g-btn" href="tel:<?= e(str_replace(' ', '', $request['phone'])) ?>"><?= gestion_icone('phone', 16) ?> Appeler</a>
             <a class="g-btn" href="https://wa.me/<?= e(preg_replace('/\D/', '', $request['phone'])) ?>"><?= gestion_icone('chat', 16) ?> WhatsApp</a>
+            <?php endif; ?>
+            <?php if ($request['email']): ?>
             <a class="g-btn" href="mailto:<?= e($request['email']) ?>?subject=<?= e(rawurlencode('Votre dossier ' . $ref)) ?>"><?= gestion_icone('send', 16) ?> E-mail</a>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </header>
+<div class="g-case-tools">
+<?php if ($request['person_id']): ?>
+    <a class="g-btn g-btn-primary g-btn-sm" href="<?= e(url('/gestion/personnes/' . $request['person_id'] . '/message/') . '?dossier=' . rawurlencode($ref)) ?>"><?= gestion_icone('chat', 15) ?> Envoyer un message</a>
+<?php endif; ?>
+<?php if (Access::peut($me, 'finance')): ?>
+    <a class="g-btn g-btn-primary g-btn-sm" href="<?= e(url('/gestion/dossiers/' . $ref . '/finance/')) ?>"><?= gestion_icone('folder', 15) ?> Devis et règlements</a>
+<?php endif; ?>
+<?php partial('gestion-task-form', ['me' => $me, 'requestId' => $request['id']]); ?>
+</div>
 
 <div class="g-grid g-grid-2">
     <div class="g-grid">
@@ -89,8 +108,8 @@ $auteurs = ['client' => 'Client'] + Access::POSTES;
                         <textarea class="g-textarea" name="note" placeholder="Pièces manquantes, prochaine étape, rendez-vous consulaire…"<?= isset($errors['note']) ? ' aria-invalid="true"' : '' ?>><?= e(old('note')) ?></textarea>
                     </label>
                     <?php if (isset($errors['note'])): ?><p class="g-field-error"><?= e($errors['note']) ?></p><?php endif; ?>
-                    <label class="g-check-row"><input type="checkbox" name="visible" value="1"<?= old('visible', '1') === '1' ? ' checked' : '' ?>> Visible par le client dans son espace (sinon, note interne)</label>
-                    <button class="g-btn g-btn-primary" type="submit"><?= gestion_icone('check', 16) ?> Enregistrer</button>
+                    <label class="g-check-row"><input type="checkbox" name="visible" value="1"<?= old('visible') === '1' ? ' checked' : '' ?>> Visible par le client dans son espace (sinon, note interne)</label>
+                    <button class="g-btn g-btn-success" type="submit"><?= gestion_icone('check', 16) ?> Enregistrer</button>
                 </form>
             </section>
         <?php endif; ?>
@@ -160,6 +179,80 @@ $auteurs = ['client' => 'Client'] + Access::POSTES;
             </section>
         <?php endif; ?>
 
+        <?php if ($etapes !== [] || $modele !== null): ?>
+            <section class="g-card is-ori" aria-labelledby="etapes" id="etapes">
+                <div class="g-card-head"><h3 id="etapes"><span class="g-head-icon" aria-hidden="true"><?= gestion_icone('check', 18) ?></span>Étapes <span class="g-count"><?= count(array_filter($etapes, static fn (array $e): bool => $e['done_at'] !== null)) ?>/<?= count($etapes) ?></span></h3></div>
+                <?php if ($modele !== null): ?>
+                    <p class="g-muted g-form-note">Modèle « <?= e($modele['title']) ?> », version <?= (int) $modele['version'] ?>, figée à l’ouverture.</p>
+                <?php endif; ?>
+                <?php if ($nouvelleVersion !== null): ?>
+                    <p class="g-notice"><?= gestion_icone('alert', 16) ?> Une version <?= (int) $nouvelleVersion['version'] ?> de ce modèle est publiée. Ce dossier garde la sienne ; adaptez les étapes au besoin dans le fil du dossier.</p>
+                <?php endif; ?>
+                <ul class="g-etapes">
+                    <?php foreach ($etapes as $etape): ?>
+                        <li class="g-etape<?= $etape['done_at'] ? ' is-fait' : '' ?>">
+                            <?php if ($peutCocher): ?>
+                                <form method="post" action="<?= e(url('/gestion/dossiers/' . $ref . '/etapes/' . $etape['id'] . '/')) ?>">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="fait" value="<?= $etape['done_at'] ? '0' : '1' ?>">
+                                    <button class="g-etape-case" type="submit" aria-label="<?= $etape['done_at'] ? 'Décocher' : 'Cocher' ?> l’étape <?= (int) $etape['position'] ?>"><?= $etape['done_at'] ? gestion_icone('check', 14) : '' ?></button>
+                                </form>
+                            <?php else: ?>
+                                <span class="g-etape-case" aria-hidden="true"><?= $etape['done_at'] ? gestion_icone('check', 14) : '' ?></span>
+                            <?php endif; ?>
+                            <div>
+                                <strong><?= (int) $etape['position'] ?>. <?= e($etape['title']) ?></strong>
+                                <small><?= $etape['documents'] !== [] ? e(implode(' · ', $etape['documents'])) : 'Aucune pièce' ?><?= $etape['due_days'] ? ' · environ ' . (int) $etape['due_days'] . ' jours' : '' ?><?= $etape['done_at'] ? ' · faite le ' . e(g_date($etape['done_at'])) . ($etape['done_first_name'] ? ' par ' . e($etape['done_first_name']) : '') : '' ?></small>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($responsable): ?>
+            <section class="g-card is-rdv" aria-labelledby="pieces-attendues">
+                <div class="g-card-head"><h3 id="pieces-attendues"><span class="g-head-icon" aria-hidden="true"><?= gestion_icone('file', 18) ?></span>Pièces attendues</h3></div>
+                <?php if (isset($errors['requirement'])): ?><p class="g-field-error" role="alert"><?= e($errors['requirement']) ?></p><?php endif; ?>
+                <?php if ($requirements === []): ?><p class="g-empty">Aucune pièce demandée.</p><?php endif; ?>
+                <div class="g-grid">
+                    <?php foreach ($requirements as $piece): ?>
+                        <article class="g-requirement" id="piece-<?= (int) $piece['id'] ?>">
+                            <div class="g-actions">
+                                <strong><?= e($piece['title']) ?></strong>
+                                <?php partial('requirement-status', ['state' => App\Models\RequestRequirement::isExpired($piece) ? 'expiree' : $piece['status']]); ?>
+                            </div>
+                            <?php if ($piece['refusal_reason']): ?><p><?= nl2br(e($piece['refusal_reason'])) ?></p><?php endif; ?>
+                            <?php if ($piece['expires_on'] ?? null): ?><p>Valable jusqu’au <?= e(g_date($piece['expires_on'])) ?></p><?php endif; ?>
+                            <?php if ($piece['minimum_valid_until']): ?><p>Validité exigée jusqu’au <?= e(g_date($piece['minimum_valid_until'])) ?></p><?php endif; ?>
+                            <?php if ($piece['document_id']): ?><a href="<?= e(url('/gestion/dossiers/' . $ref . '/pieces/' . $piece['document_id'] . '/')) ?>">Ouvrir la pièce déposée</a><?php endif; ?>
+                            <?php if ($canReviewRequirements && $piece['status'] === 'deposee'): ?>
+                                <form method="post" class="g-grid" action="<?= e(url('/gestion/dossiers/' . $ref . '/pieces-attendues/' . $piece['id'] . '/')) ?>">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="document_id" value="<?= (int) $piece['document_id'] ?>">
+                                    <label class="g-form-row">Motif en cas de refus <textarea class="g-textarea" name="reason" rows="2" maxlength="2000" aria-describedby="motif-aide-<?= (int) $piece['id'] ?>"></textarea></label>
+                                    <small id="motif-aide-<?= (int) $piece['id'] ?>">Indiquez la correction attendue. Le client verra ce texte.</small>
+                                    <label class="g-form-row">Date d’expiration, si applicable <input class="g-input" name="expires_on" type="date"></label>
+                                    <div class="g-actions">
+                                        <button class="g-btn g-btn-sm g-btn-success" name="decision" value="validee">Valider</button>
+                                        <button class="g-btn g-btn-sm g-btn-danger" name="decision" value="refusee">Refuser</button>
+                                    </div>
+                                </form>
+                            <?php endif; ?>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+                <?php if ($canManageRequirements): ?>
+                    <form method="post" class="g-grid" action="<?= e(url('/gestion/dossiers/' . $ref . '/pieces-attendues/')) ?>">
+                        <?= csrf_field() ?>
+                        <label class="g-form-row">Pièce à demander <input class="g-input" name="title" required maxlength="190"></label>
+                        <label class="g-form-row">Validité minimale, si applicable <input class="g-input" name="minimum_valid_until" type="date"></label>
+                        <div><button class="g-btn g-btn-sm g-btn-primary" type="submit">Demander la pièce</button></div>
+                    </form>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
+
         <section class="g-card is-ech" aria-labelledby="pieces">
             <div class="g-card-head"><h3 id="pieces"><span class="g-head-icon" aria-hidden="true"><?= gestion_icone('file', 18) ?></span>Pièces <span class="g-count"><?= count($documents) ?></span></h3></div>
             <?php if (!$responsable): ?>
@@ -180,6 +273,7 @@ $auteurs = ['client' => 'Client'] + Access::POSTES;
             <?php endif; ?>
         </section>
 
+        <?php if ($responsable) partial('request-follow-up', ['request' => $request, 'staff' => true, 'canEdit' => true]); ?>
         <section class="g-card" aria-labelledby="infos">
             <div class="g-card-head"><h3 id="infos"><span class="g-head-icon" aria-hidden="true"><?= gestion_icone('users', 18) ?></span>Informations transmises</h3></div>
             <dl class="g-dl">

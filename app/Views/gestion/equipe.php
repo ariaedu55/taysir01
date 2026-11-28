@@ -68,9 +68,9 @@ $actifs = count(array_filter($members, static fn (array $m): bool => (bool) $m['
                                         <button class="g-btn g-btn-sm" type="submit">Ajouter ou retirer</button>
                                     </form>
                                     <form method="post" action="<?= e($action) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="invite"><button class="g-btn g-btn-sm" type="submit"><?= $pending ? 'Renvoyer l’invitation' : 'Lien de mot de passe' ?></button></form>
-                                    <form method="post" action="<?= e($action) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="deactivate"><button class="g-btn g-btn-sm" type="submit">Désactiver</button></form>
+                                    <form method="post" action="<?= e($action) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="deactivate"><button class="g-btn g-btn-sm g-btn-warning" type="submit">Désactiver</button></form>
                                 <?php else: ?>
-                                    <form method="post" action="<?= e($action) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="activate"><button class="g-btn g-btn-sm" type="submit">Réactiver</button></form>
+                                    <form method="post" action="<?= e($action) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="activate"><button class="g-btn g-btn-sm g-btn-success" type="submit">Réactiver</button></form>
                                 <?php endif; ?>
                             </div>
                             </details>

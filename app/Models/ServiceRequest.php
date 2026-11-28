@@ -42,16 +42,23 @@ final class ServiceRequest extends Model
      *
      * @param list<array{name: string, stored: string, mime: string, size: int}> $documents
      */
+    /**
+     * Ce que voit un client (C5) : une SEULE règle pour les listes, les compteurs et la fiche, par la personne de son
+     * compte ; user_id ne sert qu'en secours pour une ligne pas encore rattachée (avant la reprise 011).
+     */
+    public const CLIENT_SCOPE = '(person_id = (SELECT cu.person_id FROM users cu WHERE cu.id = ?) OR (person_id IS NULL AND user_id = ?))';
+
     public static function create(array $data, int $userId, array $documents): array
     {
+        $person = Person::pourCompte(User::find($userId) ?? throw new \RuntimeException('Compte introuvable.'));
         $db = static::db();
         $db->beginTransaction();
         try {
             static::query(
-                'INSERT INTO service_requests (reference, user_id, service, civility, first_name, last_name, email, phone, birth_date, destination, details, message)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO service_requests (reference, user_id, person_id, service, civility, first_name, last_name, email, phone, birth_date, destination, details, message)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
-                    'TMP-' . bin2hex(random_bytes(6)), $userId, $data['service'], $data['civility'], $data['first_name'], $data['last_name'],
+                    'TMP-' . bin2hex(random_bytes(6)), $userId, $person['id'], $data['service'], $data['civility'], $data['first_name'], $data['last_name'],
                     $data['email'], $data['phone'], $data['birth_date'], $data['destination'],
                     json_encode($data['details'], JSON_UNESCAPED_UNICODE), $data['message'],
                 ]
@@ -65,7 +72,7 @@ final class ServiceRequest extends Model
                     [$id, $document['name'], $document['stored'], $document['mime'], $document['size']]
                 );
             }
-            static::query("INSERT INTO request_events (request_id, user_id, type, status, message) VALUES (?, ?, 'creation', 'nouvelle', ?)", [$id, $userId, 'Demande envoyée.']);
+            static::query("INSERT INTO request_events (request_id, user_id, type, status, message, visible) VALUES (?, ?, 'creation', 'nouvelle', ?, 1)", [$id, $userId, 'Demande envoyée.']);
             $db->commit();
         } catch (\Throwable $exception) {
             $db->rollBack();
@@ -73,6 +80,27 @@ final class ServiceRequest extends Model
         }
 
         return self::findByReference($reference);
+    }
+
+    /** Même règle que CLIENT_SCOPE, pour une demande déjà chargée. */
+    public static function appartientAuClient(array $request, int $userId): bool
+    {
+        $personId = static::query('SELECT person_id FROM users WHERE id = ?', [$userId])->fetchColumn();
+
+        return $request['person_id'] !== null
+            ? $personId !== false && $personId !== null && (int) $request['person_id'] === (int) $personId
+            : (int) $request['user_id'] === $userId;
+    }
+
+    /** La délégation ne sert qu'à consulter ce dossier et à y déposer une pièce attendue. */
+    public static function clientPermissions(array $request, int $userId, bool $lock = false): ?array
+    {
+        if (self::appartientAuClient($request, $userId)) {
+            return ['owner' => true, 'deposit' => true];
+        }
+        $access = RequestTutorAccess::activeForParent((int) $request['id'], $userId, $lock);
+
+        return $access === null ? null : ['owner' => false, 'deposit' => (bool) $access['can_deposit']];
     }
 
     public static function findByReference(string $reference): ?array
@@ -84,7 +112,20 @@ final class ServiceRequest extends Model
 
     public static function forUser(int $userId): array
     {
-        return array_map([self::class, 'decode'], static::query('SELECT * FROM service_requests WHERE user_id = ? ORDER BY created_at DESC', [$userId])->fetchAll());
+        return array_map([self::class, 'decode'], static::query('SELECT * FROM service_requests WHERE ' . self::CLIENT_SCOPE . ' ORDER BY created_at DESC', [$userId, $userId])->fetchAll());
+    }
+
+    /** Résumé du titulaire, avec une pièce à déposer lorsque le dossier est ouvert. */
+    public static function dashboardForUser(int $userId): array
+    {
+        return static::query("SELECT service, reference, status, destination, created_at,
+            (SELECT q.id FROM request_requirements q WHERE q.request_id = service_requests.id
+                AND service_requests.status NOT IN ('terminee', 'annulee')
+                AND (q.status IN ('manquante', 'refusee') OR (q.status = 'validee' AND q.expires_on < ?))
+                ORDER BY q.status = 'refusee' DESC, q.id LIMIT 1) AS next_piece
+            FROM service_requests WHERE " . self::CLIENT_SCOPE . "
+            ORDER BY next_piece IS NOT NULL DESC, status = 'attente-client' DESC,
+                status IN ('terminee', 'annulee'), created_at DESC, id DESC LIMIT 4", [gmdate('Y-m-d'), $userId, $userId])->fetchAll();
     }
 
     /**
@@ -163,9 +204,9 @@ final class ServiceRequest extends Model
     /** @return array<string, int> Nombre de demandes par statut (pour un client, ou pour toute l'agence). */
     public static function countsByStatus(?int $userId = null): array
     {
-        $sql = 'SELECT status, COUNT(*) FROM service_requests' . ($userId !== null ? ' WHERE user_id = ?' : '') . ' GROUP BY status';
+        $sql = 'SELECT status, COUNT(*) FROM service_requests' . ($userId !== null ? ' WHERE ' . self::CLIENT_SCOPE : '') . ' GROUP BY status';
 
-        return static::query($sql, $userId !== null ? [$userId] : [])->fetchAll(\PDO::FETCH_KEY_PAIR);
+        return static::query($sql, $userId !== null ? [$userId, $userId] : [])->fetchAll(\PDO::FETCH_KEY_PAIR);
     }
 
     public static function documents(int $requestId): array

@@ -88,6 +88,14 @@
 .portal .breadcrumb { margin-bottom: .6rem; color: var(--muted); }
 .portal-stack { display: grid; align-content: start; gap: 1.2rem; min-width: 0; }
 .portal-stack > .flash { margin: 0; }
+.portal-requirements { display: grid; gap: .75rem; list-style: none; margin: .85rem 0 0; padding: 0; }
+.portal-requirement { display: grid; gap: .6rem; border-radius: .85rem; background: var(--surface-2); padding: clamp(.75rem, 2vw, 1.15rem); min-width: 0; }
+.portal-requirement-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .45rem .75rem; }
+.portal .portal-requirement h3 { font: 600 1rem/1.4 var(--font-body); overflow-wrap: anywhere; margin: 0; }
+.portal-requirement p { margin: 0; overflow-wrap: anywhere; }
+.portal-requirement-form { gap: .55rem; }
+.button.portal-requirement-button { justify-self: start; background: var(--btn-base); color: white; }
+.button.portal-requirement-button:hover { background: var(--btn-base-hover); }
 .portal-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem); align-items: start; gap: 1.2rem; }
 .portal-title { margin: 1rem 0 1rem; font-size: clamp(1.4rem, 2.4vw, 1.8rem); }
 .portal .module h3 { font-size: 1.2rem; }

@@ -69,7 +69,7 @@ $missions = [
                             </div>
                             <div class="g-task-actions">
                                 <button class="g-btn g-btn-sm" type="button" data-g-soon>Déplacer</button>
-                                <button class="g-btn g-btn-sm g-btn-primary" type="button" data-g-demo="confirmer"><?= gestion_icone('check', 16) ?> Confirmer</button>
+                                <button class="g-btn g-btn-sm g-btn-success" type="button" data-g-demo="confirmer"><?= gestion_icone('check', 16) ?> Confirmer</button>
                             </div>
                         </li>
                     <?php endforeach; ?>
@@ -82,7 +82,7 @@ $missions = [
                         <li class="g-task">
                             <span class="g-avatar is-sm is-num" aria-hidden="true"><?= $i + 1 ?></span>
                             <div><strong><?= e($nom) ?></strong><p><?= e($motif) ?> · attend depuis <?= e($attente) ?></p></div>
-                            <div class="g-task-actions"><button class="g-btn g-btn-sm<?= $i === 0 ? ' g-btn-dark' : '' ?>" type="button" data-g-demo="appel" data-g-message="<?= e($nom) ?> est appelé(e) à l’accueil."><?= $i === 0 ? 'Appeler' : 'Recevoir' ?></button></div>
+                            <div class="g-task-actions"><button class="g-btn g-btn-sm<?= $i === 0 ? ' g-btn-primary' : '' ?>" type="button" data-g-demo="appel" data-g-message="<?= e($nom) ?> est appelé(e) à l’accueil."><?= $i === 0 ? 'Appeler' : 'Recevoir' ?></button></div>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -116,7 +116,7 @@ $missions = [
                             </div>
                             <div class="g-task-actions">
                                 <button class="g-btn g-btn-sm" type="button" data-g-demo="relance" data-g-message="Relance envoyée à <?= e($nom) ?> (SMS et e-mail), avec le montant et les moyens de paiement.">Relancer</button>
-                                <button class="g-btn g-btn-sm g-btn-primary" type="button" data-g-demo="action" data-g-message="Règlement de <?= e($nom) ?> enregistré : reçu généré et envoyé."><?= gestion_icone('wallet', 15) ?> Enregistrer</button>
+                                <button class="g-btn g-btn-sm g-btn-success" type="button" data-g-demo="action" data-g-message="Règlement de <?= e($nom) ?> enregistré : reçu généré et envoyé."><?= gestion_icone('wallet', 15) ?> Enregistrer</button>
                             </div>
                         </li>
                     <?php endforeach; ?>

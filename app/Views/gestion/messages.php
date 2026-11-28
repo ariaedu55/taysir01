@@ -37,7 +37,7 @@ use App\Models\ContactMessage;
                 <form method="post" action="<?= e(url('/gestion/messages/' . $m['id'] . '/')) ?>">
                     <?= csrf_field() ?>
                     <input type="hidden" name="status" value="<?= $m['status'] === 'nouveau' ? 'traite' : 'nouveau' ?>">
-                    <button class="g-btn g-btn-sm<?= $m['status'] === 'nouveau' ? ' g-btn-primary' : '' ?>" type="submit"><?= $m['status'] === 'nouveau' ? 'Marquer comme traité' : 'Remettre à traiter' ?></button>
+                    <button class="g-btn g-btn-sm<?= $m['status'] === 'nouveau' ? ' g-btn-success' : '' ?>" type="submit"><?= $m['status'] === 'nouveau' ? 'Marquer comme traité' : 'Remettre à traiter' ?></button>
                 </form>
             </li>
         <?php endforeach; ?>

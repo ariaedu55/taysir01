@@ -1,68 +1,100 @@
 <?php
-/**
- * Tableau de bord de l'espace client.
- *
- * @var array  $user
- * @var string $profileLabel
- * @var int    $requestCount, $openCount, $waitingCount, $appointmentCount
- */
-$initials = strtoupper(substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1));
-$plural = static fn (int $n, string $one, string $many): string => $n . ' ' . ($n > 1 ? $many : $one);
-$modules = [
-    ['Prendre rendez-vous', 'Rencontrez un conseiller en agence, par téléphone ou en visio.', url('/rendez_vous_orientation/'), $appointmentCount > 0 ? $plural($appointmentCount, 'à venir', 'à venir') : null, '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>'],
-    ['Faire une demande', 'Admission, visa, logement, prise en charge, billet d’avion, hôtel.', url('/mon-espace/demandes/#nouvelle-titre'), null, '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M12 18v-6M9 15h6"/>'],
-    ['Suivre mes demandes', $requestCount === 0 ? 'L’avancement de chaque démarche, étape par étape.' : $plural($openCount, 'demande en cours', 'demandes en cours') . ' sur ' . $requestCount . '.', url('/mon-espace/demandes/'), $waitingCount > 0 ? $plural($waitingCount, 'action attendue', 'actions attendues') : null, '<path d="M3 12h4l3 7 4-14 3 7h4"/>'],
-    ['Mes documents', 'Joignez relevés, diplômes ou passeport à vos demandes, en toute sécurité.', url('/mon-espace/demandes/'), null, '<path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/>'],
+use App\Models\ServiceRequest;
+
+require_once BASE_PATH . '/app/Views/gestion/icones.php';
+
+$list = '/mon-espace/demandes/';
+$first = $requests[0] ?? null;
+$path = $first ? $list . $first['reference'] . '/' : '';
+$serviceTitle = $first ? (ServiceRequest::service($first['service'])['title'] ?? 'Votre dossier') : null;
+[$message, $action, $target, $icon, $tone] = match (true) {
+    !empty($first['next_piece']) => ['Une pièce est attendue pour votre dossier.', 'Déposer la pièce', $path . '#piece-' . $first['next_piece'], 'upload', 'amber'],
+    ($first['status'] ?? null) === 'attente-client' => ['Votre conseiller attend une réponse sur votre dossier.', 'Voir ce qui est attendu', $path, 'chat', 'amber'],
+    $openCount > 0 && $first !== null => ['Retrouvez les étapes et les nouvelles de votre dossier.', 'Suivre mon dossier', $path, 'route', 'blue'],
+    $appointmentCount > 0 => ['Retrouvez la date et les informations de votre rendez-vous.', 'Voir mes rendez-vous', $list . '#rdv-titre', 'calendar', 'blue'],
+    $requestCount > 0 => ['Retrouvez les démarches que vous avez déjà effectuées.', 'Voir mes demandes', $list, 'folder', 'blue'],
+    default => ['Choisissez un service pour commencer votre démarche.', 'Faire une demande', $list . '#nouvelle-titre', 'route', 'blue'],
+};
+$ownerParent = $user['profile'] === 'parent';
+$stats = [
+    ['Dossiers en cours', $openCount, 'folder', 'blue', $list],
+    ['Dossiers en attente', $waitingCount, 'clock', 'amber', $list],
+    ['Rendez-vous à venir', $appointmentCount, 'calendar', 'green', $list . '#rdv-titre'],
 ];
 ?>
-<main id="contenu" class="dashboard">
-    <section class="wrap dashboard-head">
-        <div class="dashboard-identity" data-reveal="up">
-            <span class="avatar" aria-hidden="true"><?= e($initials) ?></span>
-            <div>
-                <p class="kicker">Mon espace</p>
-                <h1>Bonjour <em><?= e($user['first_name']) ?></em></h1>
-                <p class="dashboard-profile"><?= e($profileLabel) ?></p>
-            </div>
+<main id="contenu" class="dashboard portal client-wrap">
+    <section class="client-intro" aria-labelledby="bienvenue-titre">
+        <div><p class="client-label">Mon espace</p><h1 id="bienvenue-titre">Bonjour <?= e($user['first_name']) ?></h1></div>
+        <?php if ($profileLabel !== ''): ?><span class="client-profile"><?= e($profileLabel) ?></span><?php endif; ?>
+    </section>
+    <?php partial('flash'); ?>
+
+    <section class="client-next client-tone-<?= e($tone) ?>" aria-labelledby="prochaine-action">
+        <span class="client-icon"><?= gestion_icone($icon, 24) ?></span>
+        <div class="client-next-copy">
+            <p class="client-label">Prochaine action</p>
+            <h2 id="prochaine-action"><?= e($path !== '' && str_starts_with($target, $path) ? $serviceTitle : ($target === $list . '#rdv-titre' ? 'Votre rendez-vous' : ($first ? 'Vos demandes' : 'Votre parcours chez Taysir'))) ?></h2>
+            <p><?= e($message) ?></p>
         </div>
-        <form method="post" action="<?= e(url('/deconnexion/')) ?>" data-reveal="up">
-            <?= csrf_field() ?>
-            <button class="button light" type="submit">Se déconnecter</button>
-        </form>
+        <a class="button primary" href="<?= e(url($target)) ?>"><?= e($action) ?> <?= gestion_icone('arrow', 16) ?></a>
     </section>
 
-    <div class="wrap">
-        <?php partial('flash'); ?>
-
-        <ul class="dashboard-modules" data-stagger>
-            <?php foreach ($modules as [$name, $text, $href, $badge, $icon]): ?>
-                <li data-reveal="up">
-                    <?php if ($href): ?>
-                        <a class="module glass" data-glow href="<?= e($href) ?>">
-                    <?php else: ?>
-                        <div class="module glass is-soon">
-                    <?php endif; ?>
-                            <span class="module-icon"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><?= $icon ?></svg></span>
-                            <h2><?= e($name) ?></h2>
-                            <p><?= e($text) ?></p>
-                            <?php if ($badge): ?><span class="module-badge"><?= e($badge) ?></span><?php endif; ?>
-                    <?php if ($href): ?>
-                        </a>
-                    <?php else: ?>
-                        </div>
-                    <?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-
-        <section class="account glass" aria-labelledby="compte-titre" data-reveal="up">
-            <h2 id="compte-titre">Mon compte</h2>
-            <dl>
-                <div><dt>Nom</dt><dd><?= e($user['first_name'] . ' ' . $user['last_name']) ?></dd></div>
-                <div><dt>E-mail</dt><dd><?= e($user['email']) ?></dd></div>
-                <div><dt>Téléphone</dt><dd><?= e($user['phone'] ?? 'Non renseigné') ?></dd></div>
-                <div><dt>Membre depuis</dt><dd><?= e(date('d/m/Y', strtotime($user['created_at']))) ?></dd></div>
-            </dl>
-        </section>
+    <div class="client-metrics">
+        <?php foreach ($stats as [$label, $count, $icon, $tone, $href]): ?>
+            <a class="client-metric client-tone-<?= e($tone) ?>" href="<?= e(url($href)) ?>">
+                <span class="client-icon"><?= gestion_icone($icon, 18) ?></span><strong><?= (int) $count ?></strong><span><?= e($label) ?></span>
+            </a>
+        <?php endforeach; ?>
     </div>
+
+    <div class="portal-detail">
+        <section class="account glass" aria-labelledby="demandes-titre">
+            <div class="client-section-head"><h2 id="demandes-titre">Mes dossiers</h2><?php if ($requests !== []): ?><a href="<?= e(url($list)) ?>">Tout voir</a><?php endif; ?></div>
+            <?php if ($requests === []): ?><p class="portal-empty">Vous n’avez pas encore de dossier.</p><?php else: ?>
+                <ul class="request-list">
+                    <?php foreach ($requests as $request): ?>
+                        <li><a class="request-row" href="<?= e(url($list . $request['reference'] . '/')) ?>">
+                            <span class="request-main"><strong><?= e(ServiceRequest::service($request['service'])['title'] ?? 'Demande') ?></strong>
+                                <span><?= e($request['reference']) ?><?= $request['destination'] ? ' · ' . e($request['destination']) : '' ?></span></span>
+                            <?php partial('status', ['label' => ServiceRequest::statusLabel($request['status']), 'tone' => ServiceRequest::statusTone($request['status'])]); ?>
+                        </a></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </section>
+
+        <aside class="portal-stack">
+            <section class="account glass" aria-labelledby="raccourcis-client">
+                <h2 id="raccourcis-client">Autres démarches</h2>
+                <ul class="client-shortcuts">
+                    <?php if ($target !== $list . '#nouvelle-titre'): ?><li><a href="<?= e(url($list . '#nouvelle-titre')) ?>"><?= gestion_icone('plus', 18) ?> Faire une demande</a></li><?php endif; ?>
+                    <li><a href="<?= e(url('/rendez_vous_orientation/')) ?>"><?= gestion_icone('calendar', 18) ?> Prendre rendez-vous</a></li>
+                    <?php if ($ownerParent): ?><li><a href="<?= e(url($list . '#dossiers-partages')) ?>"><?= gestion_icone('users', 18) ?> Dossiers partagés</a></li><?php endif; ?>
+                    <?php if ($comptesRendus !== []): ?><li><a href="#comptes-rendus"><?= gestion_icone('file', 18) ?> Comptes rendus</a></li><?php endif; ?>
+                </ul>
+            </section>
+            <details class="account glass client-account" id="mon-compte">
+                <summary>Mon compte</summary>
+                <dl>
+                    <div><dt>Nom</dt><dd><?= e($user['first_name'] . ' ' . $user['last_name']) ?></dd></div>
+                    <div><dt>E-mail</dt><dd><?= e($user['email']) ?></dd></div>
+                    <div><dt>Téléphone</dt><dd><?= e($user['phone'] ?? 'Non renseigné') ?></dd></div>
+                </dl>
+            </details>
+        </aside>
+    </div>
+
+    <?php if ($comptesRendus !== []): ?>
+        <section class="account glass client-notes" id="comptes-rendus" aria-labelledby="cr-titre">
+            <h2 id="cr-titre">Comptes rendus de vos conseillers</h2>
+            <ul>
+                <?php foreach ($comptesRendus as $cr): ?>
+                    <li>
+                        <p class="client-note-meta"><?= e($cr['author_first_name']) ?> · <?= e(\App\Services\Access::libelle($cr['author_poste'])) ?> · <?= e(date('d/m/Y', strtotime($cr['created_at']))) ?><?= $cr['appointment_reference'] ? ' · entretien ' . e($cr['appointment_reference']) : '' ?></p>
+                        <p><?= nl2br(e($cr['body'])) ?></p>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </section>
+    <?php endif; ?>
 </main>

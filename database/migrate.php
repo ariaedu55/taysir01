@@ -27,6 +27,7 @@ $name = $config['name'];
 $recette = require "{$base}/config/recette.php";
 if ($recette !== null) {
     $name = $recette['base'];
+    $config['port'] = $recette['port'] ?? $config['port'];
     if ($recette['user'] !== null) {
         [$config['user'], $config['password']] = [$recette['user'], $recette['password']];
     }
