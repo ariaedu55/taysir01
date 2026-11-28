@@ -52,7 +52,8 @@ final class RequestController extends Controller
         $this->render('client/request', [
             'request' => $request,
             'service' => ServiceRequest::service($request['service']),
-            'requirements' => RequestRequirement::forRequest($requestId),
+            'requirements' => $requirements = RequestRequirement::forRequest($requestId),
+            'pieceFiles' => RequestRequirement::versionFiles($requestId, $requirements),
             'documents' => ServiceRequest::documents($requestId),
             'events' => ServiceRequest::events($requestId),
             'owner' => $owner,
@@ -154,12 +155,14 @@ final class RequestController extends Controller
         }
         $back = '/mon-espace/demandes/' . $request['reference'] . '/#pieces-attendues';
 
+        // 1 à DocumentStorage::MAX_FILES fichiers pour une même pièce (recto-verso, plusieurs pages)
         $names = $_FILES['documents']['name'] ?? null;
-        [$files, $error] = is_array($names) && count($names) === 1 && is_string($names[0] ?? null)
+        [$files, $error] = is_array($names) && $names !== [] && count($names) <= DocumentStorage::MAX_FILES
+            && array_filter($names, 'is_string') === $names
             ? DocumentStorage::collect('documents')
             : [[], null];
-        if ($error !== null || count($files) !== 1) {
-            Session::flash('_errors', ['requirement' => $error ?? 'Joignez un seul fichier pour cette pièce.']);
+        if ($error !== null || $files === [] || count($files) > DocumentStorage::MAX_FILES) {
+            Session::flash('_errors', ['requirement' => $error ?? 'Joignez entre 1 et ' . DocumentStorage::MAX_FILES . ' fichiers pour cette pièce.']);
             redirect_to($back);
         }
         try {
@@ -167,7 +170,7 @@ final class RequestController extends Controller
             if ($previous === false) {
                 throw new DomainException('Rechargez le dossier avant de déposer la pièce.');
             }
-            $documentId = RequestRequirement::deposit((int) $request['id'], $requirementId, (int) Auth::id(), $files[0], $previous);
+            $documentId = RequestRequirement::deposit((int) $request['id'], $requirementId, (int) Auth::id(), $files, $previous);
         } catch (OutOfBoundsException) {
             $this->abort(404);
         } catch (DomainException $exception) {
@@ -176,9 +179,9 @@ final class RequestController extends Controller
         }
 
         Audit::log('piece_attendue_deposee', 'dossier', $request['reference'], [
-            'requirement_id' => $requirementId, 'document_id' => $documentId,
+            'requirement_id' => $requirementId, 'document_id' => $documentId, 'fichiers' => count($files),
         ]);
-        Session::flash('_success', 'Votre pièce a bien été déposée.');
+        Session::flash('_success', count($files) > 1 ? 'Votre pièce a bien été déposée (' . count($files) . ' fichiers).' : 'Votre pièce a bien été déposée.');
         redirect_to($back);
     }
 

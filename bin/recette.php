@@ -729,6 +729,24 @@ try {
     $verifier('3A', 'Le client renouvelle la pièce expirée et garde accès à l’ancienne version', str_contains($expire['body'], 'À renouveler')
         && $etatPiece()['status'] === 'deposee' && $etatPiece()['document_id'] !== $nouvelle['document_id']
         && $nav['client1']->get($urlDocument)['code'] === 200, $etatPiece()['status']);
+    // 28/11/2026 : plusieurs fichiers pour une même pièce (recto-verso), jamais plus de DocumentStorage::MAX_FILES
+    $nav['admin']->post($staffPieces, ['title' => 'Passeport recto verso de recette']);
+    $pieceMulti = (int) $db->query("SELECT id FROM request_requirements WHERE title = 'Passeport recto verso de recette'")->fetchColumn();
+    $actionMulti = $clientPieces . 'pieces-attendues/' . $pieceMulti . '/';
+    $recto = new CURLFile($pdf, 'application/pdf', 'passeport-recto.pdf');
+    $verso = new CURLFile($pdf, 'application/pdf', 'passeport-verso.pdf');
+    $trop = $nav['client1']->post($actionMulti, ['_csrf' => $csrfPieces[1] ?? '', 'documents[0]' => $recto, 'documents[1]' => $verso,
+        'documents[2]' => $recto, 'documents[3]' => $verso, 'previous_document_id' => '0'], false);
+    $sansDepot = (int) $db->query('SELECT COUNT(*) FROM request_documents WHERE requirement_id = ' . $pieceMulti)->fetchColumn();
+    $multi = $nav['client1']->post($actionMulti, ['_csrf' => $csrfPieces[1] ?? '', 'documents[0]' => $recto, 'documents[1]' => $verso, 'previous_document_id' => '0'], false);
+    $lotMulti = $db->query('SELECT COUNT(*) AS n, COUNT(DISTINCT deposit_batch) AS lots, MIN(id) AS premier FROM request_documents WHERE requirement_id = ' . $pieceMulti)->fetch();
+    $ancreMulti = (int) $db->query('SELECT document_id FROM request_requirements WHERE id = ' . $pieceMulti)->fetchColumn();
+    $pageEquipe = $nav['admin']->get($fiche($R1))['body'];
+    $pageClient = $nav['client1']->get($clientPieces)['body'];
+    $verifier('3A', 'Pièce en plusieurs fichiers : 4 refusés ; 2 déposés ensemble, l’équipe et le client voient les deux', $trop['code'] === 303 && $sansDepot === 0
+        && $multi['code'] === 303 && (int) $lotMulti['n'] === 2 && (int) $lotMulti['lots'] === 1 && $ancreMulti === (int) $lotMulti['premier']
+        && str_contains($pageEquipe, 'passeport-recto.pdf') && str_contains($pageEquipe, 'passeport-verso.pdf') && str_contains($pageEquipe, 'fichier 2 sur 2')
+        && str_contains($pageClient, 'passeport-verso.pdf'), $lotMulti['n'] . ' fichier(s), ' . $lotMulti['lots'] . ' envoi(s)');
     unlink($pdf);
 
     $dossierSuivi = $dossiers['R2']['ref'];

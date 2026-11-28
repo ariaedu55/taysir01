@@ -225,7 +225,14 @@ $auteurs = ['client' => 'Client'] + Access::POSTES;
                             <?php if ($piece['refusal_reason']): ?><p><?= nl2br(e($piece['refusal_reason'])) ?></p><?php endif; ?>
                             <?php if ($piece['expires_on'] ?? null): ?><p>Valable jusqu’au <?= e(g_date($piece['expires_on'])) ?></p><?php endif; ?>
                             <?php if ($piece['minimum_valid_until']): ?><p>Validité exigée jusqu’au <?= e(g_date($piece['minimum_valid_until'])) ?></p><?php endif; ?>
-                            <?php if ($piece['document_id']): ?><a href="<?= e(url('/gestion/dossiers/' . $ref . '/pieces/' . $piece['document_id'] . '/')) ?>">Ouvrir la pièce déposée</a><?php endif; ?>
+                            <?php if ($piece['document_id']): ?>
+                                <?php $fichiersPiece = ($pieceFiles ?? [])[(int) $piece['id']] ?? [['id' => $piece['document_id'], 'original_name' => 'Pièce déposée']]; ?>
+                                <ul class="g-piece-files" aria-label="Fichiers de la version déposée">
+                                    <?php foreach ($fichiersPiece as $n => $fichierDepose): ?>
+                                        <li><a href="<?= e(url('/gestion/dossiers/' . $ref . '/pieces/' . (int) $fichierDepose['id'] . '/')) ?>"><?= gestion_icone('doc', 15) ?> <?= e($fichierDepose['original_name']) ?></a><?= count($fichiersPiece) > 1 ? '<small> · fichier ' . ($n + 1) . ' sur ' . count($fichiersPiece) . '</small>' : '' ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
                             <?php if ($canReviewRequirements && $piece['status'] === 'deposee'): ?>
                                 <form method="post" class="g-grid" action="<?= e(url('/gestion/dossiers/' . $ref . '/pieces-attendues/' . $piece['id'] . '/')) ?>">
                                     <?= csrf_field() ?>

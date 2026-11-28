@@ -1,25 +1,96 @@
-/* Formulaires du portail : liste des documents choisis, contrôle du nombre, de la taille et du format
-   avant l'envoi, et bouton désactivé pendant l'envoi. Le serveur refait tous ces contrôles. */
+/* Formulaires du portail : documents choisis (ajout en plusieurs fois, aperçu des images et des PDF, retrait d'un
+   fichier), contrôle du nombre, de la taille et du format avant l'envoi, et bouton désactivé pendant l'envoi.
+   Le serveur refait tous ces contrôles. */
 (() => {
     const allowed = /\.(pdf|jpe?g|png)$/i;
     const size = (bytes) => (bytes < 1048576 ? `${Math.max(1, Math.round(bytes / 1024))} Ko` : `${(bytes / 1048576).toFixed(1).replace('.', ',')} Mo`);
+    const isImage = (file) => /^image\/(jpeg|png)$/.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+    const isPdf = (file) => file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    // Remplacer la sélection d'un champ fichier n'est possible qu'avec DataTransfer (navigateurs récents)
+    const canEdit = (() => { try { return typeof DataTransfer === 'function' && new DataTransfer().files !== undefined; } catch { return false; } })();
+    const el = (tag, className, text) => {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    };
+
+    // Fenêtre d'aperçu partagée : image affichée, PDF dans un cadre, lien d'ouverture en secours (téléphones)
+    let preview;
+    const openPreview = (file, url) => {
+        if (!preview) {
+            preview = el('dialog', 'dz-preview');
+            preview.setAttribute('aria-label', 'Aperçu du document');
+            const head = el('div', 'dz-preview-head');
+            const title = el('strong', 'dz-preview-title');
+            const close = el('button', 'dz-preview-close', 'Fermer');
+            close.type = 'button';
+            close.addEventListener('click', () => preview.close());
+            head.append(title, close);
+            const body = el('div', 'dz-preview-body');
+            const open = el('a', 'dz-preview-open', 'Ouvrir dans un nouvel onglet');
+            open.target = '_blank';
+            open.rel = 'noopener';
+            preview.append(head, body, open);
+            preview.addEventListener('click', (event) => { if (event.target === preview) preview.close(); });
+            preview.addEventListener('close', () => preview.querySelector('.dz-preview-body').replaceChildren());
+            document.body.append(preview);
+        }
+        preview.querySelector('.dz-preview-title').textContent = file.name;
+        preview.querySelector('.dz-preview-open').href = url;
+        const body = preview.querySelector('.dz-preview-body');
+        if (isImage(file)) {
+            const image = el('img');
+            image.src = url;
+            image.alt = `Aperçu de ${file.name}`;
+            body.replaceChildren(image);
+        } else {
+            const frame = el('iframe');
+            frame.src = url;
+            frame.title = `Aperçu de ${file.name}`;
+            body.replaceChildren(frame);
+        }
+        if (typeof preview.showModal === 'function') preview.showModal(); else window.open(url, '_blank', 'noopener');
+    };
 
     document.querySelectorAll('[data-dropzone]').forEach((zone) => {
         const input = zone.querySelector('input[type="file"]');
         const list = zone.parentElement.querySelector('[data-dropzone-files]');
         const maxFiles = Number(input.dataset.maxFiles || 3);
         const maxSize = Number(input.dataset.maxSize || 5242880);
+        const urls = new Map();
+        const key = (file) => `${file.name}|${file.size}|${file.lastModified}`;
+        let chosen = [];
+
+        const urlOf = (file) => {
+            if (!urls.has(key(file))) urls.set(key(file), URL.createObjectURL(file));
+            return urls.get(key(file));
+        };
+        const sync = () => {
+            if (!canEdit) return;
+            const transfer = new DataTransfer();
+            chosen.forEach((file) => transfer.items.add(file));
+            input.files = transfer.files;
+        };
 
         const render = () => {
             list.replaceChildren();
-            const files = [...input.files];
+            const files = canEdit ? chosen : [...input.files];
             let problem = '';
             files.forEach((file) => {
-                const item = document.createElement('li');
-                const name = document.createElement('strong');
-                const info = document.createElement('span');
-                name.textContent = file.name;
-                info.textContent = size(file.size);
+                const item = el('li', 'dz-file');
+                const thumb = el('span', 'dz-thumb');
+                if (isImage(file)) {
+                    const image = el('img');
+                    image.src = urlOf(file);
+                    image.alt = '';
+                    thumb.append(image);
+                } else {
+                    thumb.classList.add('is-pdf');
+                    thumb.textContent = isPdf(file) ? 'PDF' : '?';
+                }
+                const info = el('span', 'dz-info');
+                info.append(el('strong', '', file.name), el('span', '', size(file.size)));
                 if (!allowed.test(file.name)) {
                     problem = 'Formats acceptés : PDF, JPG et PNG.';
                     item.classList.add('is-invalid');
@@ -27,22 +98,59 @@
                     problem = 'Chaque document doit peser 5 Mo au maximum.';
                     item.classList.add('is-invalid');
                 }
-                item.append(name, info);
+                const actions = el('span', 'dz-actions');
+                if (allowed.test(file.name)) {
+                    const show = el('button', 'dz-btn', 'Aperçu');
+                    show.type = 'button';
+                    show.setAttribute('aria-label', `Aperçu de ${file.name}`);
+                    show.addEventListener('click', () => openPreview(file, urlOf(file)));
+                    actions.append(show);
+                }
+                if (canEdit) {
+                    const remove = el('button', 'dz-btn is-remove', 'Retirer');
+                    remove.type = 'button';
+                    remove.setAttribute('aria-label', `Retirer ${file.name}`);
+                    remove.addEventListener('click', () => {
+                        chosen = chosen.filter((other) => key(other) !== key(file));
+                        if (urls.has(key(file))) {
+                            URL.revokeObjectURL(urls.get(key(file)));
+                            urls.delete(key(file));
+                        }
+                        sync();
+                        render();
+                    });
+                    actions.append(remove);
+                }
+                item.append(thumb, info, actions);
                 list.append(item);
             });
             if (files.length > maxFiles) {
                 problem = `Vous pouvez joindre ${maxFiles} documents au maximum.`;
             }
             input.setCustomValidity(problem);
+            if (files.length > 0 && maxFiles > 1) {
+                list.append(el('li', 'dz-count', `${files.length} fichier${files.length > 1 ? 's' : ''} sur ${maxFiles} au maximum${files.length < maxFiles ? ' · vous pouvez en ajouter' : ''}`));
+            }
             if (problem) {
-                const item = document.createElement('li');
-                item.className = 'is-invalid';
-                item.textContent = problem;
-                list.append(item);
+                list.append(el('li', 'is-invalid', problem));
             }
         };
 
-        input.addEventListener('change', render);
+        input.addEventListener('change', () => {
+            if (canEdit) {
+                const incoming = [...input.files];
+                if (!input.multiple) {
+                    chosen = incoming.slice(0, 1);
+                } else {
+                    // Un nouveau choix s'ajoute aux fichiers déjà retenus (sans doublon)
+                    incoming.forEach((file) => {
+                        if (!chosen.some((other) => key(other) === key(file))) chosen.push(file);
+                    });
+                }
+                sync();
+            }
+            render();
+        });
         ['dragenter', 'dragover'].forEach((type) => zone.addEventListener(type, () => zone.classList.add('is-over')));
         ['dragleave', 'drop'].forEach((type) => zone.addEventListener(type, () => zone.classList.remove('is-over')));
     });

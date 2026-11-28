@@ -353,3 +353,4 @@ a.client-row:hover { background: white; box-shadow: var(--client-shadow); }
 .client-workspace .account h3 { margin: .9rem 0 .35rem; color: var(--ink); font: 700 .95rem/1.35 var(--font-body); }
 .client-workspace .account h2 + h3, .client-workspace .account li h3 { margin-top: .2rem; }
 .client-workspace > main .client-wrap { width: auto; margin-inline: 0; }
+.client-workspace .dropzone svg { color: var(--btn-base); }

@@ -120,12 +120,21 @@ final class RequestRequirement extends Model
         }
     }
 
-    /** Enregistre un fichier validé par DocumentStorage et conserve chaque dépôt antérieur. */
-    public static function deposit(int $requestId, int $id, int $userId, array $file, int $previousDocumentId): int
+    /**
+     * Enregistre un envoi de 1 à DocumentStorage::MAX_FILES fichiers validés et conserve chaque dépôt antérieur.
+     * Les fichiers d'un même envoi partagent deposit_batch ; le premier sert d'ancre (document_id) à la version examinée.
+     *
+     * @param list<array> $files Fichiers validés par DocumentStorage::collect()
+     * @return int Identifiant de l'ancre
+     */
+    public static function deposit(int $requestId, int $id, int $userId, array $files, int $previousDocumentId): int
     {
-        $stored = null;
+        if ($files === [] || count($files) > DocumentStorage::MAX_FILES) {
+            throw new DomainException('Joignez entre 1 et ' . DocumentStorage::MAX_FILES . ' fichiers pour cette pièce.');
+        }
+        $stored = [];
         try {
-            return self::withLockedRequest($requestId, static function (array $request) use ($requestId, $id, $userId, $file, $previousDocumentId, &$stored): int {
+            return self::withLockedRequest($requestId, static function (array $request) use ($requestId, $id, $userId, $files, $previousDocumentId, &$stored): int {
                 // Octroi, révocation et dépôt prennent tous le verrou du même dossier.
                 if (!(ServiceRequest::clientPermissions($request, $userId, true)['deposit'] ?? false)) {
                     throw new OutOfBoundsException('Dossier introuvable.');
@@ -138,33 +147,77 @@ final class RequestRequirement extends Model
                 if (!in_array($requirement['status'], ['manquante', 'refusee'], true) && !self::isExpired($requirement)) {
                     throw new DomainException('Cette pièce a déjà été déposée. Un autre dépôt est possible après un refus.');
                 }
+                // Limite par envoi : un envoi de plusieurs fichiers compte pour un
                 $recentDeposits = (int) static::query(
-                    'SELECT COUNT(*) FROM request_documents WHERE request_id = ? AND requirement_id = ? AND created_at > CURRENT_TIMESTAMP - INTERVAL 24 HOUR',
+                    'SELECT COUNT(DISTINCT COALESCE(deposit_batch, CAST(id AS CHAR))) FROM request_documents
+                     WHERE request_id = ? AND requirement_id = ? AND created_at > CURRENT_TIMESTAMP - INTERVAL 24 HOUR',
                     [$requestId, $id]
                 )->fetchColumn();
                 if ($recentDeposits >= self::MAX_DEPOSITS_PER_DAY) {
                     throw new DomainException('Limite de 10 dépôts par pièce sur 24 heures atteinte. Réessayez plus tard.');
                 }
 
-                $stored = DocumentStorage::store($file);
-                static::query(
-                    'INSERT INTO request_documents (request_id, requirement_id, original_name, stored_name, mime, size) VALUES (?, ?, ?, ?, ?, ?)',
-                    [$requestId, $id, $file['name'], $stored, $file['mime'], $file['size']]
-                );
-                $documentId = (int) static::db()->lastInsertId();
+                $batch = bin2hex(random_bytes(16));
+                $anchor = null;
+                foreach ($files as $file) {
+                    $name = DocumentStorage::store($file);
+                    $stored[] = $name;
+                    static::query(
+                        'INSERT INTO request_documents (request_id, requirement_id, deposit_batch, original_name, stored_name, mime, size) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        [$requestId, $id, $batch, $file['name'], $name, $file['mime'], $file['size']]
+                    );
+                    $anchor ??= (int) static::db()->lastInsertId();
+                }
                 static::query(
                     "UPDATE request_requirements SET document_id = ?, status = 'deposee', refusal_reason = NULL, expires_on = NULL WHERE request_id = ? AND id = ?",
-                    [$documentId, $requestId, $id]
+                    [$anchor, $requestId, $id]
                 );
 
-                return $documentId;
+                return $anchor;
             });
         } catch (Throwable $exception) {
-            if ($stored !== null && !@unlink(DocumentStorage::directory() . '/' . $stored)) {
-                error_log('Impossible de nettoyer un dépôt de pièce attendue après un échec.');
+            // Échec : les fichiers de cet envoi, écrits avant l'annulation de la transaction, sont retirés du disque
+            foreach ($stored as $name) {
+                if (!@unlink(DocumentStorage::directory() . '/' . $name)) {
+                    error_log('Impossible de nettoyer un dépôt de pièce attendue après un échec.');
+                }
             }
             throw $exception;
         }
+    }
+
+    /**
+     * Fichiers de la version courante de chaque pièce : l'ancre et les fichiers du même envoi, dans l'ordre d'envoi.
+     *
+     * @param list<array> $requirements Lignes de forRequest()
+     * @return array<int, list<array>> id de la pièce => fichiers (id, original_name, mime, size)
+     */
+    public static function versionFiles(int $requestId, array $requirements): array
+    {
+        $anchors = array_values(array_filter(array_map(static fn (array $r): ?int => $r['document_id'] ?? null, $requirements)));
+        if ($anchors === []) {
+            return [];
+        }
+        $in = implode(',', array_fill(0, count($anchors), '?'));
+        $rows = static::query(
+            "SELECT a.id AS anchor, d.id, d.original_name, d.mime, d.size FROM request_documents a
+             JOIN request_documents d ON d.request_id = a.request_id
+                AND (d.id = a.id OR (a.deposit_batch IS NOT NULL AND d.deposit_batch = a.deposit_batch))
+             WHERE a.request_id = ? AND a.id IN ({$in}) ORDER BY d.id",
+            [$requestId, ...$anchors]
+        )->fetchAll();
+        $parAncre = [];
+        foreach ($rows as $row) {
+            $parAncre[(int) $row['anchor']][] = $row;
+        }
+        $files = [];
+        foreach ($requirements as $r) {
+            if (!empty($r['document_id'])) {
+                $files[(int) $r['id']] = $parAncre[(int) $r['document_id']] ?? [];
+            }
+        }
+
+        return $files;
     }
 
     public static function isExpired(array $requirement): bool

@@ -57,7 +57,8 @@ final class DossierController extends EspaceController
             'service' => ServiceRequest::service($request['service']),
             'affectations' => $affectations,
             'responsable' => $responsable,
-            'requirements' => $responsable ? RequestRequirement::forRequest((int) $request['id']) : [],
+            'requirements' => $requirements = $responsable ? RequestRequirement::forRequest((int) $request['id']) : [],
+            'pieceFiles' => RequestRequirement::versionFiles((int) $request['id'], $requirements),
             'canManageRequirements' => $isOpen && $responsable,
             'canReviewRequirements' => $isOpen && $responsable,
             // Pièces et historique complet : seulement pour le responsable (la vue transversale voit l'en-tête)

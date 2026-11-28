@@ -25,3 +25,24 @@ L’espace client a sa propre navigation avec « Mon espace », « Mes demandes 
 - Recette HTTP **227/227** sur MySQL et MariaDB 10.11. Les nouveaux contrôles vérifient l’action principale pour les huit postes et l’accès du bon client à la pièce désignée.
 - **57 contrôles d’affichage** dans Chrome à **1440, 768 et 375 px**, sur les tableaux de bord et le module principal des huit postes, puis l’accueil, la liste et la fiche du client. La passe finale ne relève aucun débordement horizontal, aucune action principale hors cadre, aucun indicateur contrôlé dont le chiffre passe sous l’icône et aucun échec de focus du lien d’évitement. Les mesures ont été réalisées avec les polices distantes bloquées. Poppins est la police déclarée et une police système prend le relais hors ligne.
 - Quatorze [captures fictives](captures/gestion-10/) documentent l’accueil et le dossier client sur les trois formats et les huit accueils équipe sur téléphone. Les vues secondaires ont bénéficié des styles partagés. La vérification visuelle page par page est limitée aux écrans cités ci-dessus.
+
+## Téléversement : plusieurs fichiers et aperçu (28/11/2026)
+
+Demande de l’utilisateur : envoyer plusieurs documents à la fois et les prévisualiser avant de valider.
+
+- **Plusieurs fichiers par pièce attendue** (recto-verso, plusieurs pages), jusqu’à `DocumentStorage::MAX_FILES` (3) fichiers de 5 Mo.
+  - La migration **025** ajoute `request_documents.deposit_batch` : les fichiers d’un même envoi partagent ce jeton.
+  - `request_requirements.document_id` reste le premier fichier de l’envoi : c’est l’ancre de la version que l’équipe valide ou refuse, donc la validation ne change pas.
+  - La limite de 10 dépôts par jour compte les envois, pas les fichiers.
+  - Le retour arrière est refusé s’il existe un envoi de plusieurs fichiers.
+- **Fiche du dossier :** le client et l’équipe voient tous les fichiers de la version (« fichier 1 sur 2 »…).
+- **Dans le navigateur (`portal.js`)**, pour le formulaire de demande, le message au conseiller et les pièces attendues :
+  - les fichiers s’ajoutent en plusieurs fois, sans doublon ;
+  - chaque fichier a une miniature (l’image, ou une tuile PDF), un bouton « Aperçu » et un bouton « Retirer » ;
+  - un compteur indique « 2 fichiers sur 3 » ;
+  - l’aperçu s’ouvre dans une fenêtre : image entière, ou PDF dans le lecteur du navigateur, avec un lien « Ouvrir dans un nouvel onglet » pour les téléphones ;
+  - sans `DataTransfer` (anciens navigateurs), on garde la sélection simple avec la liste.
+- **Vérifications :**
+  - robot : 4 fichiers refusés ; 2 fichiers déposés ensemble, visibles par l’équipe et le client ;
+  - répétition des migrations 011 à 025 : 19/19 sur MySQL 8.4 et sur MariaDB 10.11 ;
+  - parcours réel dans le navigateur, sur le dossier de démonstration local : ajout en deux fois, aperçu de l’image et du PDF, retrait, envoi (« 2 fichiers », pièce « À vérifier »).

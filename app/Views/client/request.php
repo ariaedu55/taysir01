@@ -69,16 +69,23 @@ $nextPiece = $canDeposit ? array_find($requirements, static fn (array $piece): b
                                 <?php if ($piece['refusal_reason']): ?><p><?= nl2br(e($piece['refusal_reason'])) ?></p><?php endif; ?>
                                 <?php if ($piece['expires_on'] ?? null): ?><p>Valable jusqu’au <?= e(date('d/m/Y', strtotime($piece['expires_on']))) ?></p><?php endif; ?>
                                 <?php if ($piece['minimum_valid_until']): ?><p>Validité exigée jusqu’au <?= e(date('d/m/Y', strtotime($piece['minimum_valid_until']))) ?></p><?php endif; ?>
-                                <?php if ($piece['document_id']): ?><a href="<?= e(url('/mon-espace/demandes/' . $reference . '/documents/' . $piece['document_id'] . '/')) ?>">Télécharger la pièce déposée</a><?php endif; ?>
+                                <?php if ($piece['document_id']): ?>
+                                    <ul class="piece-files" aria-label="Fichiers déposés pour <?= e($piece['title']) ?>">
+                                        <?php foreach (($pieceFiles ?? [])[$pieceId] ?? [['id' => $piece['document_id'], 'original_name' => 'Pièce déposée', 'mime' => '']] as $fichierDepose): ?>
+                                            <li><a href="<?= e(url('/mon-espace/demandes/' . $reference . '/documents/' . (int) $fichierDepose['id'] . '/')) ?>"><?= gestion_icone(str_starts_with((string) $fichierDepose['mime'], 'image/') ? 'eye' : 'doc', 15) ?> <?= e($fichierDepose['original_name']) ?></a></li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
                                 <?php if ($canUpload): ?>
                                     <form method="post" class="portal-form portal-requirement-form" action="<?= e(url('/mon-espace/demandes/' . $reference . '/pieces-attendues/' . $pieceId . '/')) ?>" enctype="multipart/form-data" data-portal-form>
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="previous_document_id" value="<?= (int) $piece['document_id'] ?>">
                                         <label class="dropzone dropzone-compact" for="fichier-<?= $pieceId ?>" data-dropzone>
-                                            <strong>Choisir un fichier pour <?= e($piece['title']) ?></strong>
-                                            <span id="format-<?= $pieceId ?>">PDF, JPG ou PNG · 5 Mo maximum</span>
-                                            <input id="fichier-<?= $pieceId ?>" name="documents[]" type="file" accept=".pdf,.jpg,.jpeg,.png"
-                                                required data-max-files="1" data-max-size="<?= DocumentStorage::MAX_SIZE ?>" aria-describedby="format-<?= $pieceId ?>">
+                                            <?= gestion_icone('upload', 22) ?>
+                                            <strong>Choisir les fichiers pour <?= e($piece['title']) ?></strong>
+                                            <span id="format-<?= $pieceId ?>">PDF, JPG ou PNG · jusqu’à <?= DocumentStorage::MAX_FILES ?> fichiers (recto-verso, plusieurs pages) · 5 Mo chacun</span>
+                                            <input id="fichier-<?= $pieceId ?>" name="documents[]" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                                required data-max-files="<?= DocumentStorage::MAX_FILES ?>" data-max-size="<?= DocumentStorage::MAX_SIZE ?>" aria-describedby="format-<?= $pieceId ?>">
                                         </label>
                                         <ul class="dropzone-files" data-dropzone-files aria-live="polite"></ul>
                                         <button class="button portal-requirement-button" type="submit"><?= $piece['status'] === 'manquante' ? 'Déposer la pièce' : 'Envoyer une nouvelle version' ?></button>

@@ -811,3 +811,7 @@ span.g-etape-case { cursor: default; }
     .g-body .g-toolbar > :is(.g-views, .g-search-field) { min-width: 0; max-width: 100%; }
     .g-body .g-table td[data-label] { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 }
+/* Fichiers d'une pièce déposée (plusieurs fichiers par envoi, 28/11/2026) */
+.g-piece-files { display: grid; gap: .3rem; margin: .3rem 0 .5rem; padding: 0; list-style: none; }
+.g-piece-files a { display: inline-flex; align-items: center; gap: .4rem; color: var(--btn-base); font-weight: 600; overflow-wrap: anywhere; }
+.g-piece-files small { color: var(--muted); }

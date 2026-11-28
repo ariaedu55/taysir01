@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Répétition de la mise en service : migrations 011 à 024 sur une COPIE (docs/gestion-phase-9.md, lot 9C).
+ * Répétition de la mise en service : migrations 011 à 025 sur une COPIE (docs/gestion-phase-9.md, lot 9C).
  *
  * 1. Crée une base au nom unique `taysir_s<aléa>_recette` (refus si elle existe ; jamais d'autre base touchée).
  * 2. Point de départ :
@@ -9,11 +9,11 @@
  *      chargement réussi prouve au passage que la sauvegarde se restaure ;
  *    - sinon l'état de production actuel (001 à 010) avec des données FICTIVES : comptes, dossiers avec pièces,
  *      rendez-vous (dont un « termine »), messages de contact.
- * 3. Applique 011 à 024 et vérifie : 14 migrations enregistrées, aucune colonne d'origine modifiée (seule
+ * 3. Applique 011 à 025 et vérifie : 15 migrations enregistrées, aucune colonne d'origine modifiée (seule
  *    transformation attendue : rendez-vous « termine » → « honore », 012), personnes reprises pour chaque compte
  *    client, dossier et rendez-vous.
- * 4. Retour arrière de 024 à 011 (database/rollback/) : schéma et données identiques au point de départ.
- * 5. Réapplication complète : 024 enregistrée, mêmes contrôles.
+ * 4. Retour arrière de 025 à 011 (database/rollback/) : schéma et données identiques au point de départ.
+ * 5. Réapplication complète : 025 enregistrée, mêmes contrôles.
  * 6. Supprime la copie (sauf --garder).
  *
  * Usage : php bin/repetition-mise-en-service.php [--depuis=sauvegarde.sql] [--mysql=chemin/mysql]
@@ -48,7 +48,7 @@ $config['host'] = '127.0.0.1';
 $base = 'taysir_s' . bin2hex(random_bytes(4)) . '_recette';
 $migrations = ['011_personnes', '012_agenda', '013_reglages_agenda', '014_notes_modeles', '015_taches', '016_rappels_agenda',
     '017_pieces_attendues', '018_suivi_dossiers', '019_acces_tuteurs', '020_accueil', '021_finance', '022_prospection',
-    '023_visites_coordonnees', '024_messages_conformite'];
+    '023_visites_coordonnees', '024_messages_conformite', '025_depots_multiples'];
 
 $dsn = sprintf('mysql:host=%s;port=%d;charset=utf8mb4', $config['host'], $config['port']);
 $pdoOptions = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
@@ -244,9 +244,9 @@ try {
 
         return $diff;
     };
-    $verifierMigre = static function (string $etape) use ($db, $verifier, $photo, $avant, $ecarts, $colonnes): void {
-        $nb = (int) $db->query("SELECT COUNT(*) FROM migrations WHERE name >= '011' AND name < '025'")->fetchColumn();
-        $verifier($etape, 'Migrations 011 à 024 enregistrées', $nb === 14, $nb . ' sur 14');
+    $verifierMigre = static function (string $etape) use ($db, $verifier, $photo, $avant, $ecarts, $colonnes, $migrations): void {
+        $nb = (int) $db->query("SELECT COUNT(*) FROM migrations WHERE name >= '011' AND name < '026'")->fetchColumn();
+        $verifier($etape, 'Migrations 011 à 025 enregistrées', $nb === count($migrations), $nb . ' sur ' . count($migrations));
         $apres = $photo();
         $diff = $ecarts($avant, $apres, ['appointments']);
         $verifier($etape, 'Colonnes d’origine inchangées dans toutes les tables (hors rendez-vous)', $diff === [], $diff === [] ? count($avant) . ' tables' : implode(', ', $diff));
@@ -277,13 +277,13 @@ try {
     };
 
     /* ---------- Migration ---------- */
-    echo "\nMigration 011-024 :\n";
-    [$retour, $sortie] = $migrer(['--jusqua=024']);
+    echo "\nMigration 011-025 :\n";
+    [$retour, $sortie] = $migrer(['--jusqua=025']);
     $verifier('migration', 'migrate.php se termine sans erreur', $retour === 0, trim((string) preg_replace('/\s+/', ' ', substr($sortie, -300))));
     $verifierMigre('migration');
 
     /* ---------- Retour arrière ---------- */
-    echo "\nRetour arrière 024 → 011 :\n";
+    echo "\nRetour arrière 025 → 011 :\n";
     foreach (array_reverse($migrations) as $fichier) {
         $executerFichier("{$root}/database/rollback/{$fichier}.down.sql");
     }
@@ -294,10 +294,10 @@ try {
 
     /* ---------- Réapplication ---------- */
     echo "\nRéapplication complète :\n";
-    [$retour, $sortie] = $migrer(['--jusqua=024']);
+    [$retour, $sortie] = $migrer(['--jusqua=025']);
     $verifier('reprise', 'migrate.php se termine sans erreur', $retour === 0, trim((string) preg_replace('/\s+/', ' ', substr($sortie, -200))));
     $verifierMigre('reprise');
-    [$retour, $sortie] = $migrer(['--jusqua=024']);
+    [$retour, $sortie] = $migrer(['--jusqua=025']);
     $verifier('reprise', 'Relance à vide : rien à appliquer, aucune erreur', $retour === 0 && !str_contains($sortie, 'Appliquée'), trim((string) preg_replace('/\s+/', ' ', $sortie)));
 
     $code = in_array(false, $resultats, true) ? 1 : 0;
