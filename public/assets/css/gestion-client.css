@@ -303,8 +303,6 @@ body:has(.c-space) .assistant-launcher-label { position: absolute; width: 1px; h
 .client-empty strong { color: var(--ink); font-size: .92rem; }
 .client-empty p { margin: .2rem 0 .6rem; color: var(--ink-soft); font-size: .84rem; line-height: 1.5; }
 .client-empty p:last-child { margin-bottom: 0; }
-.client-workspace .button.client-soft { background: #e5f6ef; color: #0f5e46; }
-.client-workspace .button.client-soft:hover { background: #d3efe3; }
 .client-rows { display: grid; gap: .45rem; margin: 0; padding: 0; list-style: none; }
 .client-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: .75rem; padding: .7rem .75rem; border-radius: .85rem; background: #f6f8fc; color: var(--ink); text-decoration: none; transition: background-color .2s, box-shadow .2s; }
 a.client-row:hover { background: white; box-shadow: var(--client-shadow); }

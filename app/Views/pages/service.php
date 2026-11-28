@@ -76,7 +76,7 @@ $motive = in_array($service['key'], ['billet', 'hotel'], true) ? 'voyage' : $ser
                                     <?php // Phase 12 : pays couverts par l'agence, puis « Autre pays » avec saisie libre ?>
                                     <?php partial('form-field', ['name' => $name, 'label' => $label, 'type' => 'select', 'required' => $required,
                                         'options' => array_combine($coveredCountries, $coveredCountries) + ['__autre' => 'Autre pays…']]); ?>
-                                    <div data-autre-pays hidden>
+                                    <div data-autre-pays<?= old($name) !== '__autre' ? ' hidden' : '' ?>>
                                         <?php partial('form-field', ['name' => $name . '_autre', 'label' => 'Précisez le pays', 'required' => false, 'autocomplete' => 'country-name']); ?>
                                     </div>
                                     <?php continue; ?>

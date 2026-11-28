@@ -13,7 +13,7 @@
  *    transformation attendue : rendez-vous « termine » → « honore », 012), personnes reprises pour chaque compte
  *    client, dossier et rendez-vous.
  * 4. Retour arrière de 026 à 011 (database/rollback/) : schéma et données identiques au point de départ.
- * 5. Réapplication complète : 025 enregistrée, mêmes contrôles.
+ * 5. Réapplication complète : 026 enregistrée, mêmes contrôles.
  * 6. Supprime la copie (sauf --garder).
  *
  * Usage : php bin/repetition-mise-en-service.php [--depuis=sauvegarde.sql] [--mysql=chemin/mysql]

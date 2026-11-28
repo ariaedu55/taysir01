@@ -145,8 +145,9 @@
                 list.append(el('li', 'is-invalid', problem));
             }
             // « Ajouter » devient « Ajouter un autre fichier » puis disparaît au maximum ; « Enregistrer » attend un fichier
-            add.querySelector('span').textContent = files.length > 0 ? 'Ajouter un autre fichier' : 'Ajouter un fichier';
-            add.hidden = input.multiple ? files.length >= maxFiles : false;
+            add.querySelector('span').textContent = files.length === 0 ? 'Ajouter un fichier'
+                : input.multiple && canEdit ? 'Ajouter un autre fichier' : 'Remplacer la sélection';
+            add.hidden = input.multiple && canEdit && files.length >= maxFiles;
             if (save) {
                 save.disabled = files.length === 0 || problem !== '';
                 const label = save.querySelector('span') || save;
@@ -265,7 +266,9 @@
             url.search = new URLSearchParams({ service: box.dataset.service, pays: pays?.value || '', motif: motif?.value || '' });
             try {
                 const response = await fetch(url, { signal: controller.signal });
-                if (response.ok && request === controller) box.innerHTML = await response.text();
+                if (!response.ok) return;
+                const html = await response.text();
+                if (request === controller) box.innerHTML = html;
             } catch (error) {
                 // Réseau indisponible : la liste générale reste affichée
             }

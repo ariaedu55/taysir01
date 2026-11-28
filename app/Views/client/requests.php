@@ -114,7 +114,7 @@ $choix = static function () use ($familles, $parFamille, $icone): void { ?>
                 <div class="client-empty">
                     <span class="client-icon client-tone-green"><?= gestion_icone('calendar', 20) ?></span>
                     <div><strong>Aucun rendez-vous prévu</strong><p>Rencontrez un conseiller à l’agence, par téléphone ou en visio.</p>
-                        <a class="button client-soft" href="<?= e(url('/rendez_vous_orientation/')) ?>"><?= gestion_icone('calendar', 16) ?> Prendre rendez-vous</a></div>
+                        <a class="button primary" href="<?= e(url('/rendez_vous_orientation/')) ?>"><?= gestion_icone('calendar', 16) ?> Prendre rendez-vous</a></div>
                 </div>
             <?php else: ?>
                 <ul class="client-rows">
