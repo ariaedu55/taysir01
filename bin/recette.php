@@ -1275,6 +1275,90 @@ try {
         && $compter("SELECT COUNT(*) FROM service_requests WHERE id = ? AND first_name = 'Personne' AND email IS NULL", [$dossierArchive]) === 1
         && $compter("SELECT COUNT(*) FROM finance_payments WHERE receipt = ? AND customer_name = 'Recette Archivee' AND amount = 50000", [$recuArchive]) === 1, $recuArchive);
 
+    /* ---------- Phase 12 : catalogue des démarches (service + pays + motif) ---------- */
+    $demarche = static function (array $champs, array $pieces) use ($nav, $chemin): int {
+        $donnees = $champs + ['steps' => "Préparation | 7\nDépôt | 14", 'sources' => 'https://france-visas.gouv.fr/'];
+        foreach ($pieces as $i => [$titre, $obligatoire]) {
+            $donnees["doc_titre[$i]"] = $titre;
+            $donnees["doc_aide[$i]"] = 'Aide ' . $titre;
+            $donnees["doc_obligatoire[$i]"] = $obligatoire ? '1' : '0';
+            $donnees["doc_fournisseur[$i]"] = 'etudiant';
+        }
+        $r = $nav['admin']->post('/gestion/modeles/', $donnees);
+        $id = (int) basename($chemin($r['location']));
+        $nav['admin']->post('/gestion/modeles/' . $id . '/', ['action' => 'verifier']);
+        $nav['admin']->post('/gestion/modeles/' . $id . '/', ['action' => 'publier']);
+
+        return $id;
+    };
+    $visaFranceEtudes = $demarche(['service' => 'visa', 'destination' => 'France', 'purpose' => 'etudes'], [['Attestation Campus France douze', true], ['Lettre du garant douze', false]]);
+    $visaGeneral = $demarche(['service' => 'visa', 'destination' => '', 'purpose' => ''], [['Passeport général douze', true]]);
+    $publiees = (int) $db->query("SELECT COUNT(*) FROM procedure_templates WHERE status = 'publie' AND id IN ({$visaFranceEtudes}, {$visaGeneral})")->fetchColumn();
+    $cleAuto = (string) $db->query('SELECT template_key FROM procedure_templates WHERE id = ' . $visaFranceEtudes)->fetchColumn();
+    $piecesDe = static fn (string $requete): string => $nav['client1']->get('/demarches/pieces/?' . $requete)['body'];
+    $p1 = $piecesDe('service=visa&pays=France&motif=etudes');
+    $p2 = $piecesDe('service=visa&pays=France&motif=tourisme');
+    $p3 = $piecesDe('service=visa&pays=Canada&motif=travail');
+    $verifier('12', 'Démarche la plus précise : France + études, puis France (tous motifs), puis le modèle général', $publiees === 2 && str_starts_with($cleAuto, 'demarche-visa-france-etudes')
+        && str_contains($p1, 'Attestation Campus France douze') && str_contains($p1, '(si possible)') && !str_contains($p2, 'Campus France douze')
+        && str_contains($p3, 'Passeport général douze') && !str_contains($p3, 'Campus France douze'), $cleAuto);
+    $doublon = $demarche(['service' => 'visa', 'destination' => 'France', 'purpose' => 'etudes'], [['Autre pièce douze', true]]);
+    $verifier('12', 'Une seule démarche publiée par service + pays + motif : la seconde reste en brouillon', $doublon > 0
+        && $db->query('SELECT status FROM procedure_templates WHERE id = ' . $doublon)->fetchColumn() === 'brouillon', (string) $doublon);
+
+    // Le client choisit pays et motif : le dossier naît avec la démarche, ses étapes et ses pièces attendues
+    preg_match('/name="_csrf" value="([^"]+)"/', $nav['client1']->get('/demande-de-visa/')['body'], $jetonVisa);
+    $avantVisa = (int) $db->query('SELECT COALESCE(MAX(id), 0) FROM service_requests')->fetchColumn();
+    $envoiVisa = $nav['client1']->post('/demande-de-visa/', ['_csrf' => $jetonVisa[1] ?? '', 'first_name' => 'Client', 'last_name' => 'Un', 'email' => 'client1@recette.test',
+        'phone' => '+221 77 000 00 11', 'destination' => 'France', 'purpose' => 'etudes', 'message' => 'Demande de recette phase 12'], false);
+    $dossierVisa = $db->query('SELECT id, reference, template_id, purpose, destination FROM service_requests WHERE id > ' . $avantVisa . " AND service = 'visa' ORDER BY id DESC LIMIT 1")->fetch();
+    $piecesVisa = $dossierVisa ? $db->query('SELECT title, optional, hint FROM request_requirements WHERE request_id = ' . (int) $dossierVisa['id'] . ' ORDER BY id')->fetchAll() : [];
+    $verifier('12', 'Demande du site : démarche appliquée, 2 pièces attendues (dont une facultative), 2 étapes', $envoiVisa['code'] === 303 && $dossierVisa !== false
+        && (int) $dossierVisa['template_id'] === $visaFranceEtudes && $dossierVisa['purpose'] === 'etudes' && count($piecesVisa) === 2
+        && (int) $piecesVisa[1]['optional'] === 1 && $piecesVisa[0]['hint'] === 'Aide Attestation Campus France douze'
+        && (int) $db->query('SELECT COUNT(*) FROM request_steps WHERE request_id = ' . (int) $dossierVisa['id'])->fetchColumn() === 2, ($dossierVisa['reference'] ?? 'aucun') . ', ' . count($piecesVisa) . ' pièce(s)');
+    $envoiAutre = $nav['client1']->post('/demande-de-visa/', ['_csrf' => $jetonVisa[1] ?? '', 'first_name' => 'Client', 'last_name' => 'Un', 'email' => 'client1@recette.test',
+        'phone' => '+221 77 000 00 11', 'destination' => '__autre', 'destination_autre' => 'Islande', 'purpose' => 'travail'], false);
+    $dossierAutre = $db->query("SELECT template_id, destination FROM service_requests WHERE service = 'visa' ORDER BY id DESC LIMIT 1")->fetch();
+    $verifier('12', '« Autre pays » : pays saisi conservé, modèle général appliqué', $envoiAutre['code'] === 303 && ($dossierAutre['destination'] ?? '') === 'Islande'
+        && (int) $dossierAutre['template_id'] === $visaGeneral, (string) ($dossierAutre['destination'] ?? ''));
+
+    // Équipe : libellé et compteur, « non demandée » puis redemandée
+    $listeEquipe = $nav['admin']->get('/gestion/dossiers/?pays=France&motif=etudes')['body'];
+    $pieceVisa = (int) $db->query('SELECT id FROM request_requirements WHERE request_id = ' . (int) ($dossierVisa['id'] ?? 0) . ' ORDER BY id DESC LIMIT 1')->fetchColumn();
+    $actionVisa = '/gestion/dossiers/' . ($dossierVisa['reference'] ?? '') . '/pieces-attendues/' . $pieceVisa . '/';
+    $sansMotif = $nav['admin']->post($actionVisa, ['decision' => 'non-demandee', 'waived_reason' => '']);
+    $etatSansMotif = $db->query('SELECT status FROM request_requirements WHERE id = ' . $pieceVisa)->fetchColumn();
+    $nav['admin']->post($actionVisa, ['decision' => 'non-demandee', 'waived_reason' => 'Garant déjà connu de l’agence']);
+    $etatRetire = $db->query('SELECT status FROM request_requirements WHERE id = ' . $pieceVisa)->fetchColumn();
+    $pageClientVisa = $nav['client1']->get('/mon-espace/demandes/' . ($dossierVisa['reference'] ?? '') . '/')['body'];
+    $nav['admin']->post($actionVisa, ['decision' => 'redemander']);
+    $verifier('12', 'Liste filtrée par pays et motif avec « 0/2 » ; pièce non demandée avec motif, visible du client, puis redemandée', str_contains($listeEquipe, (string) ($dossierVisa['reference'] ?? '?'))
+        && str_contains($listeEquipe, 'Visa · France · Études') && str_contains($listeEquipe, '0/2') && $etatSansMotif === 'manquante' && $etatRetire === 'non-demandee'
+        && str_contains($pageClientVisa, 'Garant déjà connu') && $db->query('SELECT status FROM request_requirements WHERE id = ' . $pieceVisa)->fetchColumn() === 'manquante', (string) $etatRetire);
+
+    // Ouverture par le conseiller depuis la fiche : démarche automatique
+    $jetonAuto = bin2hex(random_bytes(16));
+    $nav['conseillerA']->post('/gestion/personnes/' . $P1 . '/dossier/', ['service' => 'visa', 'destination' => 'France', 'purpose' => 'etudes', 'template_id' => 'auto',
+        'intake' => '2027', 'conseiller_id' => '', 'open_token' => $jetonAuto]);
+    $auto = $db->query("SELECT id, template_id FROM service_requests WHERE open_token = '" . $jetonAuto . "'")->fetch();
+    $verifier('12', 'Ouverture depuis la fiche, démarche automatique : mêmes pièces que sur le site', $auto !== false && (int) $auto['template_id'] === $visaFranceEtudes
+        && (int) $db->query('SELECT COUNT(*) FROM request_requirements WHERE request_id = ' . (int) $auto['id'])->fetchColumn() === 2, (string) ($auto['template_id'] ?? 'aucun'));
+
+    // Pays couverts : ajout puis retrait, reflétés dans le formulaire du site
+    $nav['admin']->post('/gestion/modeles/pays/', ['action' => 'ajouter', 'name' => 'Allemagne']);
+    $avecAllemagne = str_contains($nav['client1']->get('/demande-de-visa/')['body'], '<option value="Allemagne">Allemagne</option>');
+    $idAllemagne = (int) $db->query("SELECT id FROM covered_countries WHERE name = 'Allemagne'")->fetchColumn();
+    $nav['admin']->post('/gestion/modeles/pays/', ['action' => 'desactiver', 'id' => (string) $idAllemagne]);
+    $paysOk = [
+        'proposé' => $avecAllemagne,
+        'enregistré' => $idAllemagne > 0,
+        'retiré' => !str_contains($nav['client1']->get('/demande-de-visa/')['body'], '<option value="Allemagne">Allemagne</option>'),
+        'secrétaire 403' => $nav['secretaire']->post('/gestion/modeles/pays/', ['action' => 'ajouter', 'name' => 'Espagne'])['code'] === 403,
+    ];
+    $verifier('12', 'Pays couverts : ajouté par l’administrateur, proposé sur le site, puis retiré des listes', !in_array(false, $paysOk, true),
+        implode(', ', array_keys(array_filter($paysOk, static fn (bool $ok): bool => !$ok))) ?: 'conforme');
+
     /* Phase 9, lot 9A : matrice des droits. Attendu écrit à la main d'après le §3.5 du plan, jamais lu dans Access */
     $tous = ['admin', 'secretaire', 'prospection', 'commerciale', 'conseiller', 'orientation', 'traitement', 'comptable'];
     $matrice = [

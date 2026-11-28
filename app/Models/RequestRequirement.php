@@ -220,6 +220,26 @@ final class RequestRequirement extends Model
         return $files;
     }
 
+    /**
+     * Phase 12 : ne pas demander une pièce de la démarche pour ce dossier (motif noté), ou la redemander.
+     * Appelée sous le verrou du dossier (changeRequirements). Seule une pièce encore à fournir ou à corriger se retire.
+     */
+    public static function waive(int $requestId, int $id, bool $waive, string $reason): void
+    {
+        $requirement = self::inRequest($requestId, $id);
+        // Seule une pièce encore à fournir, sans fichier, se retire (règles de la base : 017 et 026)
+        if ($waive && $requirement['status'] !== 'manquante') {
+            throw new DomainException('Seule une pièce encore à fournir peut être marquée « non demandée ».');
+        }
+        if (!$waive && $requirement['status'] !== 'non-demandee') {
+            throw new DomainException('Cette pièce est déjà demandée.');
+        }
+        static::query(
+            'UPDATE request_requirements SET status = ?, waived_reason = ? WHERE request_id = ? AND id = ?',
+            [$waive ? 'non-demandee' : 'manquante', $waive ? mb_substr($reason, 0, 255) : null, $requestId, $id]
+        );
+    }
+
     public static function isExpired(array $requirement): bool
     {
         return $requirement['status'] === 'validee' && !empty($requirement['expires_on'])
@@ -229,7 +249,8 @@ final class RequestRequirement extends Model
     private static function rows(int $requestId): array
     {
         $rows = static::query(
-            'SELECT id, title, status, document_id, refusal_reason, expires_on, minimum_valid_until FROM request_requirements WHERE request_id = ? ORDER BY id',
+            'SELECT id, title, hint, optional, provider, status, document_id, refusal_reason, waived_reason, expires_on, minimum_valid_until
+             FROM request_requirements WHERE request_id = ? ORDER BY status = "non-demandee", optional, id',
             [$requestId]
         )->fetchAll();
 

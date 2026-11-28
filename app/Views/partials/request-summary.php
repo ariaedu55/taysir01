@@ -5,7 +5,8 @@
  * @var array      $request
  * @var array|null $service
  */
-$labels = ['identity_number' => 'Passeport ou CNI'];
+// visa_type : demandes d'avant la phase 12 (le motif est désormais dans service_requests.purpose)
+$labels = ['identity_number' => 'Passeport ou CNI', 'visa_type' => 'Type de visa'];
 foreach ($service['fields'] ?? [] as [$name, $label, $type]) {
     $labels[$name] = $label;
 }
@@ -19,6 +20,9 @@ if ($request['birth_date']) {
 }
 if ($request['destination']) {
     $rows[$labels['destination'] ?? 'Destination'] = $request['destination'];
+}
+if (!empty($request['purpose'])) {
+    $rows[$labels['purpose'] ?? 'Motif'] = \App\Services\Demarches::motifs($request['service'])[$request['purpose']] ?? $request['purpose'];
 }
 foreach ($request['details'] as $key => $value) {
     $rows[$labels[$key] ?? $key] = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $value) ? date('d/m/Y', strtotime((string) $value)) : (string) $value;

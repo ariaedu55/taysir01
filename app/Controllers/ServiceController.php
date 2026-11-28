@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Session;
 use App\Models\ServiceRequest;
+use App\Services\Demarches;
 use App\Services\DocumentStorage;
 use App\Services\FormInput;
 use App\Services\Notifier;
@@ -29,6 +30,10 @@ final class ServiceController extends Controller
             'services' => ServiceRequest::services(),
             'user' => Auth::user(),
             'countries' => FormInput::countries(),
+            'coveredCountries' => Demarches::pays(),
+            'purposes' => Demarches::motifs($service['key']),
+            'generalPieces' => ($general = Demarches::choisir($service['key'], null, null)) !== null && $general['destination'] === null && $general['purpose'] === null
+                ? Demarches::pieces($general) : [],
             'civilities' => self::CIVILITIES,
             'title' => $service['title'],
             'description' => $service['lead'],
@@ -87,8 +92,25 @@ final class ServiceController extends Controller
 
         // Champs propres au service (config/services.php).
         $dates = [];
+        $data['purpose'] = null;
         foreach ($service['fields'] as [$name, $label, $type, $required, $extra]) {
             $value = FormInput::text($name, $type === 'textarea' ? 2000 : 120);
+            // Phase 12 : pays couverts + « Autre pays » (texte libre), motif de la démarche
+            if ($type === 'country') {
+                $value = $value === '' ? '' : Demarches::paysSaisi($value, FormInput::text($name . '_autre', 120));
+                if ($value !== '') {
+                    $data['destination'] = $value;
+                    continue;
+                }
+            }
+            if ($type === 'purpose') {
+                if ($value !== '' && !isset(Demarches::motifs($service['key'])[$value])) {
+                    $errors[$name] = 'Choisissez une option de la liste.';
+                } elseif ($value !== '') {
+                    $data['purpose'] = $value;
+                    continue;
+                }
+            }
             if ($value === '') {
                 if ($required) {
                     $errors[$name] = $type === 'select' ? 'Choisissez une option.' : 'Ce champ est obligatoire.';

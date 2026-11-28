@@ -72,6 +72,19 @@ $motive = in_array($service['key'], ['billet', 'hotel'], true) ? 'voyage' : $ser
                         <legend><span>2</span> Votre projet</legend>
                         <div class="field-grid">
                             <?php foreach ($service['fields'] as [$name, $label, $type, $required, $extra]): ?>
+                                <?php if ($type === 'country' && $coveredCountries !== []): ?>
+                                    <?php // Phase 12 : pays couverts par l'agence, puis « Autre pays » avec saisie libre ?>
+                                    <?php partial('form-field', ['name' => $name, 'label' => $label, 'type' => 'select', 'required' => $required,
+                                        'options' => array_combine($coveredCountries, $coveredCountries) + ['__autre' => 'Autre pays…']]); ?>
+                                    <div data-autre-pays hidden>
+                                        <?php partial('form-field', ['name' => $name . '_autre', 'label' => 'Précisez le pays', 'required' => false, 'autocomplete' => 'country-name']); ?>
+                                    </div>
+                                    <?php continue; ?>
+                                <?php endif; ?>
+                                <?php if ($type === 'purpose'): ?>
+                                    <?php partial('form-field', ['name' => $name, 'label' => $label, 'type' => 'select', 'required' => $required, 'options' => $purposes]); ?>
+                                    <?php continue; ?>
+                                <?php endif; ?>
                                 <?php partial('form-field', [
                                     'name' => $name, 'label' => $label, 'type' => $type, 'required' => $required,
                                     'options' => $type === 'select' ? $extra : null,
@@ -88,6 +101,10 @@ $motive = in_array($service['key'], ['billet', 'hotel'], true) ? 'voyage' : $ser
                                 <option value="<?= e($country) ?>"></option>
                             <?php endforeach; ?>
                         </datalist>
+                        <?php // Phase 12 : pièces de la démarche correspondante, mises à jour selon le pays et le motif ?>
+                        <div class="demarche-pieces" data-demarche-pieces data-url="<?= e(url('/demarches/pieces/')) ?>" data-service="<?= e($service['key']) ?>" aria-live="polite">
+                            <?php partial('demarche-pieces', ['pieces' => $generalPieces, 'libelle' => null]); ?>
+                        </div>
                     </fieldset>
 
                     <?php if ($service['documents']): ?>
@@ -131,6 +148,19 @@ $motive = in_array($service['key'], ['billet', 'hotel'], true) ? 'voyage' : $ser
                 <a class="button light" href="<?= e(url('/rendez_vous_orientation/?motif=' . $motive)) ?>">Prendre rendez-vous</a>
                 <a class="button outline" href="<?= e(config('site.contact.whatsapp')) ?>">Écrire sur WhatsApp</a>
             </div>
+            <?php if ($generalPieces !== []): ?>
+                <?php // Phase 12 : une seule source, la démarche générale publiée du service ?>
+                <div class="article-aside-card glass" data-reveal="right">
+                    <p class="kicker">À préparer</p>
+                    <h2>Documents habituellement demandés</h2>
+                    <ul class="demarche-liste">
+                        <?php foreach ($generalPieces as $p): ?>
+                            <li><span class="demarche-coche" aria-hidden="true"></span><span><?= e($p['titre']) ?><?= $p['obligatoire'] ? '' : ' <em>(si possible)</em>' ?></span></li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <p class="demarche-note">La liste exacte dépend du pays et de votre situation : elle s’affiche dans le formulaire.</p>
+                </div>
+            <?php endif; ?>
             <nav class="article-aside-card glass service-others" aria-label="Nos autres services" data-reveal="right">
                 <p class="kicker">Nos autres services</p>
                 <ul>

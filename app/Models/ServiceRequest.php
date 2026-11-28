@@ -55,11 +55,11 @@ final class ServiceRequest extends Model
         $db->beginTransaction();
         try {
             static::query(
-                'INSERT INTO service_requests (reference, user_id, person_id, service, civility, first_name, last_name, email, phone, birth_date, destination, details, message)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO service_requests (reference, user_id, person_id, service, civility, first_name, last_name, email, phone, birth_date, destination, purpose, details, message)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     'TMP-' . bin2hex(random_bytes(6)), $userId, $person['id'], $data['service'], $data['civility'], $data['first_name'], $data['last_name'],
-                    $data['email'], $data['phone'], $data['birth_date'], $data['destination'],
+                    $data['email'], $data['phone'], $data['birth_date'], $data['destination'], $data['purpose'] ?? null,
                     json_encode($data['details'], JSON_UNESCAPED_UNICODE), $data['message'],
                 ]
             );
@@ -73,6 +73,11 @@ final class ServiceRequest extends Model
                 );
             }
             static::query("INSERT INTO request_events (request_id, user_id, type, status, message, visible) VALUES (?, ?, 'creation', 'nouvelle', ?, 1)", [$id, $userId, 'Demande envoyée.']);
+            // Phase 12 : la démarche publiée correspondante fixe les étapes et les pièces attendues
+            $demarche = \App\Services\Demarches::choisir($data['service'], $data['destination'] ?? null, $data['purpose'] ?? null);
+            if ($demarche !== null) {
+                \App\Services\Demarches::appliquer($db, $id, $demarche);
+            }
             $db->commit();
         } catch (\Throwable $exception) {
             $db->rollBack();
@@ -118,7 +123,7 @@ final class ServiceRequest extends Model
     /** Résumé du titulaire, avec une pièce à déposer lorsque le dossier est ouvert. */
     public static function dashboardForUser(int $userId): array
     {
-        return static::query("SELECT service, reference, status, destination, created_at,
+        return static::query("SELECT service, reference, status, destination, purpose, created_at,
             (SELECT q.id FROM request_requirements q WHERE q.request_id = service_requests.id
                 AND service_requests.status NOT IN ('terminee', 'annulee')
                 AND (q.status IN ('manquante', 'refusee') OR (q.status = 'validee' AND q.expires_on < ?))
@@ -160,10 +165,13 @@ final class ServiceRequest extends Model
      * Liste de l'espace équipe, TOUJOURS limitée au périmètre du compte (Access::perimetre).
      * $vue : null (tout le périmètre), « mes » (affectés à ce compte), « a-prendre » (personne à son poste).
      */
-    public static function searchScoped(array $user, ?string $status, ?string $service, ?string $vue = null, int $limit = 200): array
+    public static function searchScoped(array $user, ?string $status, ?string $service, ?string $vue = null, int $limit = 200, ?string $pays = null, ?string $motif = null): array
     {
         [$scope, $params] = \App\Services\Access::perimetre($user, 'r');
+        // Phase 12 : pièces demandées (hors « non demandées ») et pièces reçues (déposées ou validées)
         $sql = "SELECT r.*, (SELECT COUNT(*) FROM request_documents d WHERE d.request_id = r.id) AS document_count,
+                       (SELECT COUNT(*) FROM request_requirements q WHERE q.request_id = r.id AND q.status <> 'non-demandee') AS pieces_total,
+                       (SELECT COUNT(*) FROM request_requirements q WHERE q.request_id = r.id AND q.status IN ('deposee', 'validee')) AS pieces_recues,
                        (SELECT GROUP_CONCAT(CONCAT(ra.poste, ':', COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'dans la file')) SEPARATOR '|')
                         FROM request_assignments ra LEFT JOIN users u ON u.id = ra.user_id WHERE ra.request_id = r.id) AS responsables
                 FROM service_requests r WHERE {$scope}";
@@ -188,6 +196,14 @@ final class ServiceRequest extends Model
         if ($service !== null && self::service($service) !== null) {
             $sql .= ' AND r.service = ?';
             $params[] = $service;
+        }
+        if ($pays !== null && $pays !== '') {
+            $sql .= ' AND r.destination = ?';
+            $params[] = $pays;
+        }
+        if ($motif !== null && $motif !== '') {
+            $sql .= ' AND r.purpose = ?';
+            $params[] = $motif;
         }
 
         return array_map([self::class, 'decode'], static::query($sql . ' ORDER BY r.updated_at DESC LIMIT ' . max(1, min(500, $limit)), $params)->fetchAll());

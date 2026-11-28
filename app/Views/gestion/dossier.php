@@ -49,7 +49,11 @@ $auteurs = ['client' => 'Client'] + Access::POSTES;
             <h2><?= e($request['first_name'] . ' ' . $request['last_name']) ?></h2>
             <?= g_badge(ServiceRequest::statusLabel($request['status'], true), ServiceRequest::statusTone($request['status'])) ?>
         </div>
-        <p class="g-case-sub"><?= e($ref) ?> · <?= e($service['title'] ?? $request['service']) ?><?= $request['destination'] ? ' · ' . e($request['destination']) : '' ?> · reçu <?= e(g_date($request['created_at'])) ?></p>
+        <?php // Phase 12 : démarche du dossier et pièces reçues sur pièces demandées ?>
+        <?php $demandees = array_filter($requirements, static fn (array $q): bool => $q['status'] !== 'non-demandee');
+        $recues = array_filter($demandees, static fn (array $q): bool => in_array($q['status'], ['deposee', 'validee'], true)); ?>
+        <p class="g-case-sub"><?= e($ref) ?> · <strong><?= e(App\Services\Demarches::libelle($request['service'], $request['destination'], $request['purpose'] ?? null)) ?></strong>
+            <?= $demandees !== [] ? ' · ' . count($recues) . '/' . count($demandees) . ' pièces reçues' : '' ?> · reçu <?= e(g_date($request['created_at'])) ?></p>
         <div class="g-owners" aria-label="Responsables par poste">
             <?php foreach (Access::AFFECTATIONS as $poste => $libelle): ?>
                 <?php
@@ -222,8 +226,26 @@ $auteurs = ['client' => 'Client'] + Access::POSTES;
                                 <strong><?= e($piece['title']) ?></strong>
                                 <?php partial('requirement-status', ['state' => App\Models\RequestRequirement::isExpired($piece) ? 'expiree' : $piece['status']]); ?>
                             </div>
+                            <?php // Phase 12 : aide, facultative, fournisseur ; non demandée pour ce dossier ?>
+                            <?php $repere = array_filter([$piece['hint'] ?? null, !empty($piece['optional']) ? 'Facultative' : null,
+                                !empty($piece['provider']) && $piece['provider'] !== 'etudiant' ? 'Fournie par le ' . ($piece['provider'] === 'parent' ? 'parent' : 'garant') : null]); ?>
+                            <?php if ($repere !== []): ?><p class="g-muted"><?= e(implode(' · ', $repere)) ?></p><?php endif; ?>
+                            <?php if ($piece['status'] === 'non-demandee'): ?><p class="g-muted">Non demandée : <?= e((string) ($piece['waived_reason'] ?? '')) ?></p><?php endif; ?>
                             <?php if ($piece['refusal_reason']): ?><p><?= nl2br(e($piece['refusal_reason'])) ?></p><?php endif; ?>
                             <?php if ($piece['expires_on'] ?? null): ?><p>Valable jusqu’au <?= e(g_date($piece['expires_on'])) ?></p><?php endif; ?>
+                            <?php if ($canReviewRequirements && in_array($piece['status'], ['manquante', 'non-demandee'], true)): ?>
+                                <form method="post" class="g-waive" action="<?= e(url('/gestion/dossiers/' . $ref . '/pieces-attendues/' . $piece['id'] . '/')) ?>">
+                                    <?= csrf_field() ?>
+                                    <?php if ($piece['status'] === 'non-demandee'): ?>
+                                        <button class="g-btn g-btn-sm" name="decision" value="redemander">Redemander la pièce</button>
+                                    <?php else: ?>
+                                        <details><summary class="g-btn g-btn-sm g-btn-warning">Ne pas demander</summary>
+                                            <label class="g-form-row">Pourquoi, pour ce dossier ? <input class="g-input" name="waived_reason" maxlength="255" required placeholder="Déjà fournie à l’agence, sans objet…"></label>
+                                            <button class="g-btn g-btn-sm g-btn-warning" name="decision" value="non-demandee">Confirmer</button>
+                                        </details>
+                                    <?php endif; ?>
+                                </form>
+                            <?php endif; ?>
                             <?php if ($piece['minimum_valid_until']): ?><p>Validité exigée jusqu’au <?= e(g_date($piece['minimum_valid_until'])) ?></p><?php endif; ?>
                             <?php if ($piece['document_id']): ?>
                                 <?php $fichiersPiece = ($pieceFiles ?? [])[(int) $piece['id']] ?? [['id' => $piece['document_id'], 'original_name' => 'Pièce déposée']]; ?>

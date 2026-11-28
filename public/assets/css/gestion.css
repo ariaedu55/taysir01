@@ -815,3 +815,22 @@ span.g-etape-case { cursor: default; }
 .g-piece-files { display: grid; gap: .3rem; margin: .3rem 0 .5rem; padding: 0; list-style: none; }
 .g-piece-files a { display: inline-flex; align-items: center; gap: .4rem; color: var(--btn-base); font-weight: 600; overflow-wrap: anywhere; }
 .g-piece-files small { color: var(--muted); }
+/* Phase 12 : Démarches et pièces */
+.g-demarches { display: grid; gap: .45rem; margin: 0; padding: 0; list-style: none; }
+.g-demarche { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .65rem .8rem; border-radius: var(--g-r); background: var(--g-soft); }
+.g-demarche > a { display: grid; gap: .15rem; min-width: 0; color: var(--ink); text-decoration: none; }
+.g-demarche > a:hover strong { color: var(--btn-base); }
+.g-demarche small { color: var(--muted); font-size: .76rem; }
+.g-demarche-etat { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .3rem; flex: none; }
+.g-pays-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem; margin-top: .8rem; }
+.g-pays-form .g-form-row { flex: 1 1 14rem; margin: 0; }
+.g-form-wide { grid-column: 1 / -1; }
+.g-doc-rows { display: grid; gap: .45rem; margin-bottom: .6rem; }
+.g-doc-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.6fr) 8.5rem 8.5rem auto; gap: .45rem; align-items: center; }
+.g-doc-head { color: var(--muted); font-size: .72rem; font-weight: 700; }
+@media (max-width: 62rem) {
+    .g-doc-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: .6rem; border-radius: var(--g-r); background: var(--g-soft); }
+    .g-doc-head { display: none; }
+    .g-demarche { flex-wrap: wrap; }
+}
+.g-waive details > summary { display: inline-flex; list-style: none; cursor: pointer; } .g-waive details[open] { display: grid; gap: .45rem; padding: .6rem; border-radius: var(--g-r); background: var(--g-soft); }

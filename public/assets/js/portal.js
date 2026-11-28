@@ -245,6 +245,36 @@
         load();
     });
 
+    // Phase 12 : « Autre pays » ouvre la saisie libre ; les documents à préparer suivent le pays et le motif choisis
+    document.querySelectorAll('[data-demarche-pieces]').forEach((box) => {
+        const form = box.closest('form');
+        const pays = form.querySelector('select[name="destination"]');
+        const motif = form.querySelector('select[name="purpose"]');
+        const autre = form.querySelector('[data-autre-pays]');
+        let request;
+        const toggleAutre = () => {
+            if (!autre || !pays) return;
+            autre.hidden = pays.value !== '__autre';
+            if (autre.hidden) autre.querySelector('input').value = '';
+        };
+        const refresh = async () => {
+            request?.abort();
+            const controller = new AbortController();
+            request = controller;
+            const url = new URL(box.dataset.url, window.location.href);
+            url.search = new URLSearchParams({ service: box.dataset.service, pays: pays?.value || '', motif: motif?.value || '' });
+            try {
+                const response = await fetch(url, { signal: controller.signal });
+                if (response.ok && request === controller) box.innerHTML = await response.text();
+            } catch (error) {
+                // Réseau indisponible : la liste générale reste affichée
+            }
+        };
+        [pays, motif].forEach((field) => field?.addEventListener('change', () => { toggleAutre(); refresh(); }));
+        toggleAutre();
+        if (pays?.value || motif?.value) refresh();
+    });
+
     // Retour arrière du navigateur après un envoi : le bouton redevient utilisable.
     window.addEventListener('pageshow', () => {
         document.querySelectorAll('[data-portal-form] button[aria-busy="true"]').forEach((button) => {

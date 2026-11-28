@@ -65,7 +65,7 @@ $stats = [
                         <li><a class="client-row" href="<?= e(url($list . $request['reference'] . '/')) ?>">
                             <span class="client-icon client-tone-<?= in_array($request['service'], ['billet', 'hotel'], true) ? 'green' : 'blue' ?>"><?= gestion_icone($iconeService[$request['service']] ?? 'folder', 18) ?></span>
                             <span class="client-row-main"><strong><?= e(ServiceRequest::service($request['service'])['title'] ?? 'Demande') ?></strong>
-                                <span><?= e($request['reference']) ?><?= $request['destination'] ? ' · ' . e($request['destination']) : '' ?></span></span>
+                                <span><?= e($request['reference']) ?><?= $request['destination'] ? ' · ' . e($request['destination']) : '' ?><?= !empty($request['purpose']) ? ' · ' . e(\App\Services\Demarches::motifs($request['service'])[$request['purpose']] ?? '') : '' ?></span></span>
                             <?php partial('status', ['label' => ServiceRequest::statusLabel($request['status']), 'tone' => ServiceRequest::statusTone($request['status'])]); ?>
                             <span class="client-row-go" aria-hidden="true"><?= gestion_icone('chevron', 18) ?></span>
                         </a></li>

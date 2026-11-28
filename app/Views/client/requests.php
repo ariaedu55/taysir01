@@ -97,7 +97,7 @@ $choix = static function () use ($familles, $parFamille, $icone): void { ?>
                                 <span class="client-icon client-tone-<?= ($visuels[$request['service']][1] ?? 'etudes') === 'voyage' ? 'green' : 'blue' ?>"><?= gestion_icone($icone($request['service']), 18) ?></span>
                                 <span class="client-row-main">
                                     <strong><?= e($serviceNames[$request['service']] ?? $request['service']) ?></strong>
-                                    <span><?= e($request['reference']) ?><?= $request['destination'] ? ' · ' . e($request['destination']) : '' ?> · envoyée le <?= e(date('d/m/Y', strtotime($request['created_at']))) ?></span>
+                                    <span><?= e($request['reference']) ?><?= $request['destination'] ? ' · ' . e($request['destination']) : '' ?><?= !empty($request['purpose']) ? ' · ' . e(\App\Services\Demarches::motifs($request['service'])[$request['purpose']] ?? '') : '' ?> · envoyée le <?= e(date('d/m/Y', strtotime($request['created_at']))) ?></span>
                                 </span>
                                 <?php partial('status', ['label' => ServiceRequest::statusLabel($request['status']), 'tone' => ServiceRequest::statusTone($request['status'])]); ?>
                                 <span class="client-row-go" aria-hidden="true"><?= gestion_icone('chevron', 18) ?></span>

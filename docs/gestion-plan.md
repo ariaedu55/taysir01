@@ -538,7 +538,7 @@ Pour chaque phase, le document « avant » liste les scénarios. Le document « 
 | 9. Recette d’ensemble et préparation de la mise en service | `gestion-phase-9.md` | Recette et bascule terminées, migration 024 en production. Comptes réels et SMTP en attente. |
 | 10. Refonte des interfaces | `gestion-phase-10.md` | publiée avec `4922bec`, 57 contrôles d’affichage sur les parcours principaux du client et des huit postes |
 | 11. Configuration des notifications | `gestion-phase-11.md` | consignée le 28/11 : e-mails (SMTP fourni par l’utilisateur) et tâches automatiques, puis notifications push |
-| 12. Catalogue des démarches et pièces à fournir | `gestion-phase-12.md` | proposition du 28/11, à valider : démarche = service + pays + motif, pièces configurées par l’administrateur, appliquées automatiquement |
+| 12. Catalogue des démarches et pièces à fournir | `gestion-phase-12.md` | réalisée le 28/11 (migration 026, robot 241/241 sur MySQL et MariaDB) ; démarches de départ en brouillon, à faire valider et publier par l’agence |
 
 ---
 

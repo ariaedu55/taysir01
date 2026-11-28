@@ -123,7 +123,10 @@ final class PersonneController extends EspaceController
         try {
             [$dossier, $nouveau] = OuvertureDossier::ouvrir($me, $personne, [
                 'service' => FormInput::text('service', 30),
-                'destination' => FormInput::text('destination', 120),
+                // Phase 12 : pays couvert ou « Autre pays » (texte libre), motif, démarche automatique
+                'destination' => ($pays = FormInput::text('destination', 120)) === '' ? '' : \App\Services\Demarches::paysSaisi($pays, FormInput::text('destination_autre', 120)),
+                'purpose' => FormInput::text('purpose', 40),
+                'auto' => $modele === 'auto',
                 'intake' => FormInput::text('intake', 40),
                 'template_id' => ctype_digit($modele) ? (int) $modele : null,
                 'conseiller_id' => ctype_digit($conseiller) ? (int) $conseiller : null,

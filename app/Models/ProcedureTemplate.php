@@ -75,9 +75,10 @@ final class ProcedureTemplate extends Model
     public static function creer(array $data, int $auteur): array
     {
         static::query(
-            "INSERT INTO procedure_templates (template_key, version, title, service, destination, status, steps, sources, created_by)
-             VALUES (?, 1, ?, ?, ?, 'brouillon', ?, ?, ?)",
-            [$data['template_key'], $data['title'], $data['service'], $data['destination'], json_encode($data['steps'], JSON_UNESCAPED_UNICODE), json_encode($data['sources'], JSON_UNESCAPED_SLASHES), $auteur]
+            "INSERT INTO procedure_templates (template_key, version, title, service, destination, purpose, status, steps, documents, sources, created_by)
+             VALUES (?, 1, ?, ?, ?, ?, 'brouillon', ?, ?, ?, ?)",
+            [$data['template_key'], $data['title'], $data['service'], $data['destination'], $data['purpose'] ?? null, json_encode($data['steps'], JSON_UNESCAPED_UNICODE),
+                json_encode($data['documents'] ?? [], JSON_UNESCAPED_UNICODE), json_encode($data['sources'], JSON_UNESCAPED_SLASHES), $auteur]
         );
 
         return self::get((int) static::db()->lastInsertId());
@@ -90,8 +91,9 @@ final class ProcedureTemplate extends Model
             throw new \DomainException('Seul un brouillon se modifie. Créez une nouvelle version.');
         }
         static::query(
-            "UPDATE procedure_templates SET title = ?, service = ?, destination = ?, steps = ?, sources = ? WHERE id = ? AND status = 'brouillon'",
-            [$data['title'], $data['service'], $data['destination'], json_encode($data['steps'], JSON_UNESCAPED_UNICODE), json_encode($data['sources'], JSON_UNESCAPED_SLASHES), $template['id']]
+            "UPDATE procedure_templates SET title = ?, service = ?, destination = ?, purpose = ?, steps = ?, documents = ?, sources = ? WHERE id = ? AND status = 'brouillon'",
+            [$data['title'], $data['service'], $data['destination'], $data['purpose'] ?? null, json_encode($data['steps'], JSON_UNESCAPED_UNICODE),
+                json_encode($data['documents'] ?? [], JSON_UNESCAPED_UNICODE), json_encode($data['sources'], JSON_UNESCAPED_SLASHES), $template['id']]
         );
     }
 
@@ -103,8 +105,8 @@ final class ProcedureTemplate extends Model
         try {
             $suivante = (int) static::query('SELECT MAX(version) FROM procedure_templates WHERE template_key = ? FOR UPDATE', [$template['template_key']])->fetchColumn() + 1;
             static::query(
-                "INSERT INTO procedure_templates (template_key, version, title, service, destination, status, steps, sources, created_by)
-                 SELECT template_key, ?, title, service, destination, 'brouillon', steps, sources, ? FROM procedure_templates WHERE id = ?",
+                "INSERT INTO procedure_templates (template_key, version, title, service, destination, purpose, status, steps, documents, sources, created_by)
+                 SELECT template_key, ?, title, service, destination, purpose, 'brouillon', steps, documents, sources, ? FROM procedure_templates WHERE id = ?",
                 [$suivante, $auteur, $template['id']]
             );
             $id = (int) $db->lastInsertId();
@@ -132,6 +134,15 @@ final class ProcedureTemplate extends Model
         if ($template['verified_at'] === null || $template['verified_by'] === null || $template['sources'] === []) {
             throw new \DomainException('Publication refusée : faites vérifier le modèle (date et auteur) et indiquez au moins une source officielle.');
         }
+        // Phase 12 : une seule démarche publiée par service + pays + motif (index unique published_combo)
+        $autre = static::query(
+            "SELECT title FROM procedure_templates WHERE status = 'publie' AND template_key <> ? AND service = ?
+             AND destination <=> ? AND purpose <=> ? LIMIT 1",
+            [$template['template_key'], $template['service'], $template['destination'], $template['purpose'] ?? null]
+        )->fetchColumn();
+        if ($autre !== false) {
+            throw new \DomainException('La démarche « ' . $autre . ' » est déjà publiée pour ce service, ce pays et ce motif : retirez-la d’abord.');
+        }
         $db = static::db();
         $db->beginTransaction();
         try {
@@ -157,6 +168,7 @@ final class ProcedureTemplate extends Model
     {
         $row['steps'] = json_decode((string) $row['steps'], true) ?: [];
         $row['sources'] = json_decode((string) ($row['sources'] ?? ''), true) ?: [];
+        $row['documents'] = json_decode((string) ($row['documents'] ?? ''), true) ?: [];
 
         return $row;
     }

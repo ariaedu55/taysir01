@@ -66,6 +66,11 @@ $nextPiece = $canDeposit ? array_find($requirements, static fn (array $piece): b
                                     <h3><?= e($piece['title']) ?></h3>
                                     <?php partial('requirement-status', ['state' => $expired ? 'expiree' : $piece['status']]); ?>
                                 </div>
+                                <?php // Phase 12 : aide, facultative, fournisseur, ou pièce non demandée pour ce dossier ?>
+                                <?php $repere = array_filter([$piece['hint'] ?? null, !empty($piece['optional']) ? 'Facultative' : null,
+                                    !empty($piece['provider']) && $piece['provider'] !== 'etudiant' ? 'À fournir par ' . mb_strtolower(App\Services\Demarches::FOURNISSEURS[$piece['provider']] ?? $piece['provider']) : null]); ?>
+                                <?php if ($repere !== []): ?><p class="piece-repere"><?= e(implode(' · ', $repere)) ?></p><?php endif; ?>
+                                <?php if (($piece['status'] ?? '') === 'non-demandee'): ?><p class="piece-repere">Votre conseiller n’a pas besoin de cette pièce<?= !empty($piece['waived_reason']) ? ' : ' . e($piece['waived_reason']) : '' ?>.</p><?php endif; ?>
                                 <?php if ($piece['refusal_reason']): ?><p><?= nl2br(e($piece['refusal_reason'])) ?></p><?php endif; ?>
                                 <?php if ($piece['expires_on'] ?? null): ?><p>Valable jusqu’au <?= e(date('d/m/Y', strtotime($piece['expires_on']))) ?></p><?php endif; ?>
                                 <?php if ($piece['minimum_valid_until']): ?><p>Validité exigée jusqu’au <?= e(date('d/m/Y', strtotime($piece['minimum_valid_until']))) ?></p><?php endif; ?>

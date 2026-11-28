@@ -14,7 +14,8 @@ declare(strict_types=1);
  * identity   true : numéro de passeport ou CNI proposé (facultatif)
  * documents  true : envoi de documents proposé
  * fields     champs propres au service : [nom, libellé, type, requis, options ou aide]
- *            types : text, date, number, select, country, textarea
+ *            types : text, date, number, select, country (pays couverts + « Autre pays »), purpose (motifs), textarea
+ * purposes   motifs de la démarche (phase 12), seulement quand ils changent les pièces à fournir : clé => libellé
  */
 
 $levels = ['Seconde', 'Première', 'Terminale', 'Bac obtenu', 'Licence 1', 'Licence 2', 'Licence 3', 'Master 1', 'Master 2', 'Formation professionnelle', 'Autre'];
@@ -25,8 +26,10 @@ return [
         'lead' => 'Taysir crée votre dossier sur les plateformes de candidature des établissements et vous accompagne jusqu’à la réponse.',
         'steps' => ['Étude de votre profil et de vos résultats', 'Choix des établissements et des filières', 'Constitution et dépôt du dossier', 'Suivi jusqu’à la réponse d’admission'],
         'identity' => false, 'documents' => true,
+        'purposes' => ['licence' => 'Licence (bachelor)', 'master' => 'Master', 'bts' => 'BTS ou DUT', 'ecole' => 'École d’ingénieurs ou de commerce', 'autre' => 'Autre formation'],
         'fields' => [
             ['destination', 'Pays visé', 'country', true, null],
+            ['purpose', 'Niveau visé', 'purpose', true, null],
             ['level', 'Niveau actuel', 'select', true, $levels],
             ['school', 'Établissement actuel', 'text', true, null],
             ['track', 'Filière ou série', 'text', true, null],
@@ -51,9 +54,10 @@ return [
         'lead' => 'Taysir assure toute la démarche, de la constitution du dossier consulaire à la préparation de l’entretien, jusqu’à l’obtention du visa.',
         'steps' => ['Vérification des pièces exigées par le consulat', 'Constitution du dossier et prise de rendez-vous', 'Préparation à l’entretien', 'Suivi jusqu’à la décision'],
         'identity' => true, 'documents' => true,
+        'purposes' => ['etudes' => 'Études', 'travail' => 'Travail', 'tourisme' => 'Tourisme', 'visite-familiale' => 'Visite familiale', 'affaires' => 'Affaires'],
         'fields' => [
             ['destination', 'Pays de destination', 'country', true, null],
-            ['visa_type', 'Type de visa', 'select', true, ['Étudiant', 'Travailleur', 'Affaires', 'Tourisme', 'Visite familiale']],
+            ['purpose', 'Type de visa', 'purpose', true, null],
             ['departure', 'Date de départ envisagée', 'date', false, null],
         ],
     ],

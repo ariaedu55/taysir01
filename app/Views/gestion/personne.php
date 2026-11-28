@@ -111,8 +111,9 @@ $sous = array_filter([
  */
 $errors = errors();
 $postes = App\Services\Access::POSTES;
-$modelesPublies = array_values(array_filter($modeles, static fn (array $m): bool => $m['status'] === 'publie'));
-$brouillons = array_values(array_filter($modeles, static fn (array $m): bool => $m['status'] === 'brouillon'));
+// Phase 12 : pays couverts et motifs par service pour l'ouverture d'un dossier
+$paysCouverts = App\Services\Demarches::pays();
+$motifsParService = array_filter(array_column(config('services'), 'purposes', 'key'));
 ?>
 <div class="g-grid g-grid-2 g-fiche-2c">
     <section class="g-card is-ori" aria-labelledby="notes-titre" id="notes">
@@ -164,7 +165,25 @@ $brouillons = array_values(array_filter($modeles, static fn (array $m): bool => 
                             <?php foreach ($services as $cle => $titre): ?><option value="<?= e($cle) ?>"<?= old('service', 'admission') === $cle ? ' selected' : '' ?>><?= e($titre) ?></option><?php endforeach; ?>
                         </select>
                     </label>
-                    <label class="g-form-row">Destination <input class="g-input" name="destination" value="<?= e(old('destination')) ?>" maxlength="120" placeholder="France"></label>
+                    <?php // Phase 12 : pays couverts + « Autre pays », motif selon le service ; la démarche suit ces trois choix ?>
+                    <label class="g-form-row">Destination
+                        <select class="g-select" name="destination">
+                            <option value="">Non précisée</option>
+                            <?php foreach ($paysCouverts as $nomPays): ?><option value="<?= e($nomPays) ?>"<?= old('destination') === $nomPays ? ' selected' : '' ?>><?= e($nomPays) ?></option><?php endforeach; ?>
+                            <option value="__autre"<?= old('destination') === '__autre' ? ' selected' : '' ?>>Autre pays…</option>
+                        </select>
+                    </label>
+                    <label class="g-form-row">Autre pays <span class="g-muted">(si « Autre pays »)</span><input class="g-input" name="destination_autre" value="<?= e(old('destination_autre')) ?>" maxlength="120"></label>
+                    <label class="g-form-row">Motif
+                        <select class="g-select" name="purpose">
+                            <option value="">Sans motif particulier</option>
+                            <?php foreach ($motifsParService as $cleService => $motifsService): ?>
+                                <optgroup label="<?= e($services[$cleService] ?? $cleService) ?>">
+                                    <?php foreach ($motifsService as $cleMotif => $libelleMotif): ?><option value="<?= e($cleMotif) ?>"<?= old('purpose') === $cleMotif ? ' selected' : '' ?>><?= e($libelleMotif) ?></option><?php endforeach; ?>
+                                </optgroup>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
                     <label class="g-form-row">Rentrée visée <input class="g-input" name="intake" value="<?= e(old('intake')) ?>" maxlength="40" placeholder="Septembre 2027"></label>
                     <?php if ($conseillers !== []): ?>
                         <label class="g-form-row">Conseiller
@@ -176,14 +195,9 @@ $brouillons = array_values(array_filter($modeles, static fn (array $m): bool => 
                     <?php endif; ?>
                 </div>
                 <fieldset class="g-choice">
-                    <legend>Modèle de procédure</legend>
-                    <?php foreach ($modelesPublies as $m): ?>
-                        <label class="g-choice-card is-ok"><input type="radio" name="template_id" value="<?= (int) $m['id'] ?>"><span><strong><?= e($m['title']) ?></strong><small>Version <?= (int) $m['version'] ?> · <?= count($m['steps']) ?> étapes · vérifié le <?= e(g_date($m['verified_at'])) ?><?= App\Models\ProcedureTemplate::aRevoir($m) ? ' · à revérifier' : '' ?></small></span></label>
-                    <?php endforeach; ?>
-                    <?php foreach ($brouillons as $m): ?>
-                        <label class="g-choice-card is-neutre is-disabled"><input type="radio" disabled><span><strong><?= e($m['title']) ?></strong><small>Brouillon (version <?= (int) $m['version'] ?>) : à faire vérifier par l’agence, non proposé.</small></span></label>
-                    <?php endforeach; ?>
-                    <label class="g-choice-card is-neutre"><input type="radio" name="template_id" value="" checked><span><strong>Sans modèle</strong><small>Le dossier s’ouvre sans étapes ; elles se suivent dans le fil du dossier.</small></span></label>
+                    <legend>Étapes et pièces à fournir</legend>
+                    <label class="g-choice-card is-ok"><input type="radio" name="template_id" value="auto" checked><span><strong>Démarche automatique (recommandé)</strong><small>La démarche publiée qui correspond au service, au pays et au motif fixe les étapes et les pièces attendues.</small></span></label>
+                    <label class="g-choice-card is-neutre"><input type="radio" name="template_id" value=""><span><strong>Sans démarche</strong><small>Le dossier s’ouvre sans étapes ni pièces ; vous les demanderez une par une.</small></span></label>
                 </fieldset>
                 <?php if (isset($errors['ouvrir'])): ?><p class="g-field-error"><?= e($errors['ouvrir']) ?></p><?php endif; ?>
                 <button class="g-btn g-btn-primary" type="submit"><?= gestion_icone('folder', 16) ?> Ouvrir le dossier</button>

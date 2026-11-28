@@ -22,7 +22,7 @@ use App\Models\User;
 final class OuvertureDossier
 {
     /**
-     * @param array{service: string, destination: string, intake: string, template_id: ?int, conseiller_id: ?int, token: string} $data
+     * @param array{service: string, destination: string, purpose?: string, auto?: bool, intake: string, template_id: ?int, conseiller_id: ?int, token: string} $data
      * @return array{0: array, 1: bool} Dossier, et true s'il vient d'être créé (false : renvoi du même formulaire)
      * @throws \DomainException motif du refus
      */
@@ -39,8 +39,12 @@ final class OuvertureDossier
         if (!isset($services[$data['service']])) {
             throw new \DomainException('Choisissez un service.');
         }
+        // Phase 12 : motif propre au service (sinon ignoré) ; « automatique » = la démarche publiée la plus précise
+        $motif = isset(Demarches::motifs($data['service'])[$data['purpose'] ?? '']) ? $data['purpose'] : null;
         $template = null;
-        if ($data['template_id'] !== null) {
+        if (!empty($data['auto'])) {
+            $template = Demarches::choisir($data['service'], $data['destination'] !== '' ? $data['destination'] : null, $motif);
+        } elseif ($data['template_id'] !== null) {
             $template = ProcedureTemplate::get($data['template_id']);
             if ($template === null || $template['status'] !== 'publie') {
                 throw new \DomainException('Ce modèle n’est pas publié : choisissez un modèle publié, ou « sans modèle ».');
@@ -64,12 +68,12 @@ final class OuvertureDossier
         try {
             $db->prepare(
                 'INSERT INTO service_requests (reference, user_id, person_id, template_id, service, first_name, last_name, email, phone,
-                    destination, intake, opened_by, open_token, details)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    destination, purpose, intake, opened_by, open_token, details)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 'TMP-' . bin2hex(random_bytes(6)), $userId === false ? null : (int) $userId, (int) $personne['id'], $template['id'] ?? null,
                 $data['service'], $personne['first_name'], $personne['last_name'], $personne['email'] ?: null, $personne['phone'] ?: null,
-                $data['destination'] !== '' ? $data['destination'] : null, $data['intake'] !== '' ? $data['intake'] : null,
+                $data['destination'] !== '' ? $data['destination'] : null, $motif, $data['intake'] !== '' ? $data['intake'] : null,
                 (int) $ouvreur['id'], $data['token'], json_encode(new \stdClass()),
             ]);
             $id = (int) $db->lastInsertId();
@@ -80,10 +84,8 @@ final class OuvertureDossier
                     ->execute([$id, (int) $conseiller['id'], (int) $ouvreur['id']]);
                 $db->prepare('UPDATE service_requests SET assigned_to = ? WHERE id = ?')->execute([(int) $conseiller['id'], $id]);
             }
-            foreach (array_values($template['steps'] ?? []) as $position => $etape) {
-                $db->prepare('INSERT INTO request_steps (request_id, position, title, documents, due_days) VALUES (?, ?, ?, ?, ?)')
-                    ->execute([$id, $position + 1, mb_substr((string) ($etape['titre'] ?? ''), 0, 190), json_encode($etape['pieces'] ?? [], JSON_UNESCAPED_UNICODE),
-                        isset($etape['delai']) ? (int) $etape['delai'] : null]);
+            if ($template !== null) {
+                Demarches::appliquer($db, $id, $template); // étapes et pièces attendues (phase 12)
             }
             $message = 'Dossier ouvert par ' . $ouvreur['first_name'] . ' ' . $ouvreur['last_name']
                 . ($template !== null ? ' avec le modèle « ' . $template['title'] . ' » (version ' . $template['version'] . ')' : ' sans modèle')

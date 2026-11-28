@@ -530,7 +530,7 @@ final class Access
                 ['Pilotage', 'chart', '/gestion/pilotage/', 'pilotage'],
                 ['Fiches à rapprocher', 'users', '/gestion/doublons/', 'doublons'],
                 ['Équipe', 'team', '/gestion/equipe/', 'equipe'],
-                ['Modèles de procédure', 'folder', '/gestion/modeles/', 'modeles'],
+                ['Démarches et pièces', 'folder', '/gestion/modeles/', 'modeles'],
                 ['Modèles de messages', 'chat', '/gestion/messages-modeles/', 'messages-modeles'],
                 ['Journal d’audit', 'lock', '/gestion/journal/', 'journal'],
                 ['Durées de conservation', 'lock', '/gestion/conservation/', 'conservation'],

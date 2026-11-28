@@ -2,7 +2,7 @@
 
 Demande de l’utilisateur (28/11/2026) : permettre à l’administrateur de configurer les pièces à fournir selon la demande (visa études ou travail, admission en France ou ailleurs…), de façon cohérente entre le site public, l’ouverture d’un dossier et le suivi par l’équipe, en quelques clics.
 
-**Statut : proposition, à valider avant tout code.**
+**Statut : réalisée le 28/11/2026** avec les décisions recommandées : les 12 destinations du site + « Autre pays » ; 5 motifs de visa et le niveau visé pour l’admission ; démarches de départ en brouillon, à faire valider par l’agence ; dossiers existants inchangés.
 
 ## 1. Ce qui existe aujourd’hui
 
@@ -92,3 +92,66 @@ L’administrateur crée donc un modèle général par service, puis il précise
 2. Les **motifs** : visa (5 motifs) et admission (niveau visé), comme proposé ?
 3. Le **contenu des démarches** : l’agence fournit-elle les listes de pièces réelles, ou faut-il préparer des listes de départ à faire valider ?
 4. **Les demandes déjà faites** : leur appliquer la démarche ? Je recommande de ne rien changer aux dossiers existants.
+
+## 6. Résultat (28/11/2026)
+
+**12A — Données (migration 026, retour arrière avec garde-fous) :**
+
+- table `covered_countries`, avec les 12 pays du site ;
+- sur `procedure_templates` : `purpose`, `documents` (pièces structurées) et `published_combo`. L’index unique `published_combo` garantit une seule démarche publiée par service + pays + motif ;
+- `service_requests.purpose` ;
+- sur `request_requirements` : `hint`, `optional`, `provider`, `waived_reason` et le statut `non-demandee`. La règle de 017 est élargie : une pièce « non demandée » n’a pas de fichier ;
+- 7 démarches de départ **en brouillon**, à faire valider par l’agence : 6 modèles généraux et « Visa · France · Études ». « Canada, permis d’études » reçoit le motif « études ».
+
+**Service `Demarches` :**
+
+- `choisir()` retient la démarche publiée la plus précise ;
+- `pieces()` lit les pièces structurées ou, pour les anciens modèles, celles des étapes ;
+- `appliquer()` copie les étapes et les pièces dans la transaction de création ;
+- `libelle()` produit « Visa · France · Études ».
+
+**12B — Page administrateur « Démarches et pièces » :**
+
+- une carte par service, chaque démarche avec sa portée, son nombre de pièces et d’étapes, sa version, sa vérification et son état ;
+- création par trois listes (service, pays, motif) : la clé et le titre se remplissent seuls ;
+- pièces saisies une par ligne, avec « Ajouter une pièce » et « Retirer » ;
+- « Dupliquer pour un autre pays » ;
+- pays couverts : ajouter, retirer, réactiver ;
+- publication refusée, avec un message clair, si la combinaison est déjà publiée.
+
+**12C — Application automatique :**
+
+- formulaires du site : pays couverts + « Autre pays… » avec saisie libre, motif pour le visa et l’admission ;
+- encadré « Documents à préparer », mis à jour par `/demarches/pieces/` ;
+- le dossier naît avec sa démarche, ses étapes et ses pièces attendues (aide, facultative, fournisseur) ;
+- à l’ouverture depuis une fiche : choix « Démarche automatique (recommandé) » ou « Sans démarche ».
+
+**12D — Affichage :**
+
+- colonne « Démarche » et compteur « 2/7 » dans la liste des dossiers, avec des filtres par pays et par motif ;
+- en-tête du dossier : « Visa · France · Études · 2/7 pièces reçues » ;
+- motif visible dans l’espace client ;
+- « Ne pas demander » (avec un motif obligatoire) et « Redemander », pour une pièce encore à fournir ;
+- pages des services : « Documents habituellement demandés », lus dans la démarche générale publiée.
+
+**Vérifications :**
+
+- robot **241/241** sur MySQL 8.4 et sur MariaDB 10.11, dont 7 contrôles de la phase 12. Ils couvrent :
+  - la démarche la plus précise ;
+  - une seule démarche publiée par combinaison ;
+  - les pièces créées à la demande du site ;
+  - « Autre pays » ;
+  - la liste filtrée avec « 0/2 » ;
+  - « non demandée » puis « redemandée » ;
+  - l’ouverture automatique ;
+  - les pays couverts et les droits ;
+- robot agenda : 12/12 ;
+- répétition des migrations 011 à 026 : 19/19 sur les deux moteurs ;
+- contrôle à l’écran (page administrateur, démarche, formulaire du site). La démarche « Visa · France · Études » a été publiée **dans la base locale seulement**, pour la démonstration.
+
+**Corrections en cours de route :**
+
+- une substitution avait retiré les barres obliques inverses d’un nom de classe : erreur 500 sur l’accueil client, détectée par le robot et corrigée ;
+- la règle de 017 empêchait « non demandée » : elle a été élargie dans 026.
+
+**Reste à faire par l’agence :** relire les démarches de départ, ajouter les sources officielles, les marquer vérifiées et les publier. Tant qu’aucune démarche n’est publiée, les dossiers s’ouvrent sans pièces, comme avant.

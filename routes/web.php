@@ -33,6 +33,7 @@ use App\Controllers\ArticleController;
 use App\Controllers\OrientationController;
 use App\Controllers\PasswordController;
 use App\Controllers\ServiceController;
+use App\Controllers\DemarcheController;
 use App\Controllers\UniversityController;
 use App\Models\Article;
 use App\Models\Destination;
@@ -98,6 +99,8 @@ foreach (ServiceRequest::services() as $service) {
     $router->get('/' . $serviceSlug, static fn () => (new ServiceController())->show($serviceSlug));
     $router->post('/' . $serviceSlug, static fn () => (new ServiceController())->store($serviceSlug), ['auth']);
 }
+// Phase 12 : « Documents à préparer » de la démarche choisie (fragment public, sans donnée personnelle)
+$router->get('/demarches/pieces', [DemarcheController::class, 'pieces']);
 $router->get('/rendez_vous_orientation', [AppointmentController::class, 'create']);
 $router->post('/rendez_vous_orientation', [AppointmentController::class, 'store']);
 $router->get('/rendez_vous_orientation/confirmation', [AppointmentController::class, 'confirmation']);
@@ -226,6 +229,8 @@ $router->get('/gestion/conservation', [GestionDonnees::class, 'conservation'], [
 $router->get('/gestion/modeles', [GestionModeles::class, 'index'], ['auth', 'acces:modeles']);
 $router->post('/gestion/modeles', [GestionModeles::class, 'store'], ['auth', 'acces:modeles']);
 $router->get('/gestion/modeles/nouveau', [GestionModeles::class, 'create'], ['auth', 'acces:modeles']);
+// Phase 12 : pays couverts (avant {id} : « pays » n'est pas un identifiant)
+$router->post('/gestion/modeles/pays', [GestionModeles::class, 'pays'], ['auth', 'acces:modeles']);
 $router->get('/gestion/modeles/{id}', [GestionModeles::class, 'show'], ['auth', 'acces:modeles']);
 $router->post('/gestion/modeles/{id}', [GestionModeles::class, 'update'], ['auth', 'acces:modeles']);
 

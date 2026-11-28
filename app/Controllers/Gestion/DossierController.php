@@ -32,13 +32,19 @@ final class DossierController extends EspaceController
         $vue = in_array($this->filter('vue'), ['mes', 'a-prendre'], true) ? $this->filter('vue') : null;
         $status = $this->filter('statut');
         $service = $this->filter('service');
+        // Phase 12 : filtres pays et motif
+        $pays = $this->filter('pays');
+        $motif = $this->filter('motif');
 
         $this->page('dossiers', 'dossiers', 'Dossiers', [
-            'dossiers' => ServiceRequest::searchScoped($me, $status, $service, $vue),
+            'dossiers' => ServiceRequest::searchScoped($me, $status, $service, $vue, 200, $pays, $motif),
             'counts' => ServiceRequest::countsScoped($me),
             'vue' => $vue,
             'status' => $status,
             'service' => $service,
+            'pays' => $pays,
+            'motif' => $motif,
+            'paysCouverts' => \App\Services\Demarches::pays(),
             'services' => ServiceRequest::services(),
             'affectable' => array_intersect(Access::postes($me), array_keys(Access::AFFECTATIONS)) !== [],
         ]);
@@ -154,6 +160,19 @@ final class DossierController extends EspaceController
                 throw new OutOfBoundsException('Pièce attendue introuvable.');
             }
             $decision = $_POST['decision'] ?? null;
+            // Phase 12 : une pièce de la démarche peut ne pas être demandée pour ce dossier (motif noté), puis redemandée
+            if (in_array($decision, ['non-demandee', 'redemander'], true)) {
+                $motif = FormInput::text('waived_reason', 255);
+                if ($decision === 'non-demandee' && $motif === '') {
+                    throw new DomainException('Indiquez pourquoi cette pièce n’est pas demandée pour ce dossier.');
+                }
+                RequestRequirement::waive($requestId, $requirementId, $decision === 'non-demandee', $motif);
+
+                return [
+                    $decision === 'non-demandee' ? 'Pièce marquée « non demandée ».' : 'Pièce de nouveau demandée.',
+                    ['requirement_id' => $requirementId, 'decision' => $decision],
+                ];
+            }
             if (!in_array($decision, ['validee', 'refusee'], true)) {
                 throw new DomainException('Choisissez de valider ou de refuser la pièce.');
             }
