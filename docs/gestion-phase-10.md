@@ -46,3 +46,10 @@ Demande de l’utilisateur : envoyer plusieurs documents à la fois et les prév
   - robot : 4 fichiers refusés ; 2 fichiers déposés ensemble, visibles par l’équipe et le client ;
   - répétition des migrations 011 à 025 : 19/19 sur MySQL 8.4 et sur MariaDB 10.11 ;
   - parcours réel dans le navigateur, sur le dossier de démonstration local : ajout en deux fois, aperçu de l’image et du PDF, retrait, envoi (« 2 fichiers », pièce « À vérifier »).
+
+### Boutons explicites (28/11/2026, demande de l’utilisateur)
+
+- Un bouton bleu **« Ajouter un fichier »** est placé à côté de chaque zone de dépôt, car beaucoup de personnes ne savent pas qu’il faut cliquer dans la zone. Il devient « Ajouter un autre fichier » après un premier choix, puis disparaît quand le maximum est atteint.
+- Le bouton vert **« Enregistrer la pièce »** (« Enregistrer les 2 fichiers »…) reste inactif tant qu’aucun fichier n’est choisi. Une phrase rappelle les trois étapes et précise que rien n’est envoyé avant l’enregistrement.
+- La prochaine action devient « Ajouter la pièce », sur l’accueil et dans le dossier.
+- Correction : les noms de fichier trop longs faisaient déborder la liste « Documents ».

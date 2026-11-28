@@ -44,7 +44,7 @@ $nextPiece = $canDeposit ? array_find($requirements, static fn (array $piece): b
             <section class="client-next client-tone-amber" aria-labelledby="prochaine-action">
                 <span class="client-icon"><?= gestion_icone($nextPiece ? 'upload' : 'chat', 24) ?></span>
                 <div class="client-next-copy"><p class="client-label">Prochaine action</p><h2 id="prochaine-action"><?= e($nextPiece ? $nextPiece['title'] : 'Répondre à votre conseiller') ?></h2></div>
-                <a class="button primary" href="<?= $nextPiece ? '#piece-' . (int) $nextPiece['id'] : '#repondre-titre' ?>"><?= $nextPiece ? 'Déposer la pièce' : 'Écrire un message' ?> <?= gestion_icone('arrow', 16) ?></a>
+                <a class="button primary" href="<?= $nextPiece ? '#piece-' . (int) $nextPiece['id'] : '#repondre-titre' ?>"><?= $nextPiece ? 'Ajouter la pièce' : 'Écrire un message' ?> <?= gestion_icone('arrow', 16) ?></a>
             </section>
         </div>
     <?php endif; ?>
@@ -88,7 +88,11 @@ $nextPiece = $canDeposit ? array_find($requirements, static fn (array $piece): b
                                                 required data-max-files="<?= DocumentStorage::MAX_FILES ?>" data-max-size="<?= DocumentStorage::MAX_SIZE ?>" aria-describedby="format-<?= $pieceId ?>">
                                         </label>
                                         <ul class="dropzone-files" data-dropzone-files aria-live="polite"></ul>
-                                        <button class="button portal-requirement-button" type="submit"><?= $piece['status'] === 'manquante' ? 'Déposer la pièce' : 'Envoyer une nouvelle version' ?></button>
+                                        <?php $libelleEnregistrer = $piece['status'] === 'manquante' ? 'Enregistrer la pièce' : 'Enregistrer la nouvelle version'; ?>
+                                        <div class="dz-buttons" data-dz-buttons>
+                                            <button class="button portal-requirement-button" type="submit" data-save-button data-label="<?= e($libelleEnregistrer) ?>"><?= gestion_icone('check', 16) ?> <span><?= e($libelleEnregistrer) ?></span></button>
+                                        </div>
+                                        <p class="dz-hint">1. Ajoutez vos fichiers · 2. Vérifiez-les avec « Aperçu » · 3. Cliquez sur « <?= e($libelleEnregistrer) ?> ». Rien n’est envoyé avant.</p>
                                     </form>
                                 <?php endif; ?>
                             </li>
@@ -118,7 +122,8 @@ $nextPiece = $canDeposit ? array_find($requirements, static fn (array $piece): b
                         </div>
                         <div class="field">
                             <label class="dropzone dropzone-compact" for="champ-documents" data-dropzone>
-                                <strong>Joindre des documents</strong>
+                                <?= gestion_icone('upload', 22) ?>
+                                <strong>Joindre des documents (facultatif)</strong>
                                 <span id="champ-documents-aide">PDF, JPG ou PNG · <?= DocumentStorage::MAX_FILES ?> fichiers de 5 Mo au maximum</span>
                                 <input id="champ-documents" name="documents[]" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                                     data-max-files="<?= DocumentStorage::MAX_FILES ?>" data-max-size="<?= DocumentStorage::MAX_SIZE ?>" aria-describedby="champ-documents-aide">

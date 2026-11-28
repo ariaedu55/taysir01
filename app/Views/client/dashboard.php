@@ -8,7 +8,7 @@ $first = $requests[0] ?? null;
 $path = $first ? $list . $first['reference'] . '/' : '';
 $serviceTitle = $first ? (ServiceRequest::service($first['service'])['title'] ?? 'Votre dossier') : null;
 [$message, $action, $target, $icon, $tone] = match (true) {
-    !empty($first['next_piece']) => ['Une pièce est attendue pour votre dossier.', 'Déposer la pièce', $path . '#piece-' . $first['next_piece'], 'upload', 'amber'],
+    !empty($first['next_piece']) => ['Une pièce est attendue pour votre dossier.', 'Ajouter la pièce', $path . '#piece-' . $first['next_piece'], 'upload', 'amber'],
     ($first['status'] ?? null) === 'attente-client' => ['Votre conseiller attend une réponse sur votre dossier.', 'Voir ce qui est attendu', $path, 'chat', 'amber'],
     $openCount > 0 && $first !== null => ['Retrouvez les étapes et les nouvelles de votre dossier.', 'Suivre mon dossier', $path, 'route', 'blue'],
     $appointmentCount > 0 => ['Retrouvez la date et les informations de votre rendez-vous.', 'Voir mes rendez-vous', $list . '#rdv-titre', 'calendar', 'blue'],

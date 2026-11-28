@@ -62,6 +62,16 @@
         const key = (file) => `${file.name}|${file.size}|${file.lastModified}`;
         let chosen = [];
 
+        // Bouton explicite « Ajouter un fichier » (beaucoup ne savent pas qu'il faut cliquer dans la zone)
+        const form = zone.closest('form');
+        const buttons = form?.querySelector('[data-dz-buttons]');
+        const save = form?.querySelector('[data-save-button]');
+        const add = el('button', 'button dz-add');
+        add.type = 'button';
+        add.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> <span>Ajouter un fichier</span>';
+        add.addEventListener('click', () => input.click());
+        if (buttons) buttons.prepend(add); else list.after(add);
+
         const urlOf = (file) => {
             if (!urls.has(key(file))) urls.set(key(file), URL.createObjectURL(file));
             return urls.get(key(file));
@@ -134,7 +144,16 @@
             if (problem) {
                 list.append(el('li', 'is-invalid', problem));
             }
+            // « Ajouter » devient « Ajouter un autre fichier » puis disparaît au maximum ; « Enregistrer » attend un fichier
+            add.querySelector('span').textContent = files.length > 0 ? 'Ajouter un autre fichier' : 'Ajouter un fichier';
+            add.hidden = input.multiple ? files.length >= maxFiles : false;
+            if (save) {
+                save.disabled = files.length === 0 || problem !== '';
+                const label = save.querySelector('span') || save;
+                label.textContent = files.length > 1 ? `Enregistrer les ${files.length} fichiers` : save.dataset.label;
+            }
         };
+        render();
 
         input.addEventListener('change', () => {
             if (canEdit) {
@@ -166,7 +185,7 @@
             const button = form.querySelector('button[type="submit"]');
             if (button) {
                 button.setAttribute('aria-busy', 'true');
-                button.dataset.label = button.textContent;
+                button.dataset.busyLabel = button.innerHTML;
                 button.textContent = 'Envoi en cours…';
             }
         });
@@ -230,7 +249,7 @@
     window.addEventListener('pageshow', () => {
         document.querySelectorAll('[data-portal-form] button[aria-busy="true"]').forEach((button) => {
             button.removeAttribute('aria-busy');
-            button.textContent = button.dataset.label || button.textContent;
+            if (button.dataset.busyLabel) button.innerHTML = button.dataset.busyLabel;
         });
     });
 })();
