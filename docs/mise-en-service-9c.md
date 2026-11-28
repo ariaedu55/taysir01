@@ -11,6 +11,12 @@ Avant la bascule, le VPS était à la migration 010 sur MariaDB 10.11.15. Les ex
 - Les 14 migrations 011 à 024 sont appliquées. Le site Taysir a été placé temporairement en maintenance. Nginx a repris sa configuration d’origine après les vérifications HTTPS. La page publique, la connexion, les destinations, la réservation et le blog répondent en 200. Les espaces privés redirigent vers la connexion et la maquette est inaccessible publiquement.
 - Le pilote e-mail est encore `log`. L’agence doit désigner le premier administrateur et fournir la liste de l’équipe. Un essai SMTP réussi précède les invitations et l’activation des tâches planifiées.
 
+## Ajustements déployés le 28/11/2026
+
+La révision `26e23c6291b48ca953fa89f3d5612aaea764050b` a été publiée sur GitHub `main` puis déployée sur le VPS. Elle contient les ajustements de l’espace client et du menu mobile ainsi que le code de l’assistant. Cette mise à jour ne contenait aucune migration. Le VPS reste à `024_messages_conformite.sql`.
+
+La recette locale passe à 227/227. Le chat a été vérifié en mode simulé, avec réception d’une réponse en flux et de l’événement de fin. En production, l’accueil, la connexion et la réservation répondent en HTTPS, les ressources de l’assistant se chargent et les espaces privés redirigent vers la connexion. L’assistant reste désactivé sur le VPS, où aucune clé DeepSeek n’est configurée.
+
 ## Avant la fenêtre de mise à jour
 
 1. Relever le commit en service, la dernière migration enregistrée et la version du moteur. Préparer les droits du premier administrateur et relever les comptes actifs depuis « Équipe ». L’agence fournit, pour chaque personne à inviter, le nom, l’adresse professionnelle, le poste et l’agence. L’affectation des missions complémentaires se fait depuis la même page.

@@ -12,6 +12,7 @@ use App\Controllers\Client\RequestController as ClientRequests;
 use App\Controllers\DestinationController;
 use App\Controllers\Gestion\DossierController as GestionDossiers;
 use App\Controllers\Gestion\EquipeController as GestionEquipe;
+use App\Controllers\Gestion\AssistantSettingsController as GestionAssistant;
 use App\Controllers\Gestion\JourneeController as GestionJournee;
 use App\Controllers\Gestion\MaquetteController as GestionMaquette;
 use App\Controllers\Gestion\MessageController as GestionMessages;
@@ -205,6 +206,8 @@ $router->get('/gestion/equipe', [GestionEquipe::class, 'index'], ['auth', 'acces
 $router->post('/gestion/equipe', [GestionEquipe::class, 'store'], ['auth', 'acces:equipe']);
 $router->post('/gestion/equipe/{id}', [GestionEquipe::class, 'update'], ['auth', 'acces:equipe']);
 $router->get('/gestion/journal', [GestionEquipe::class, 'journal'], ['auth', 'acces:journal']);
+$router->get('/gestion/assistant', [GestionAssistant::class, 'index'], ['auth', 'acces:assistant']);
+$router->post('/gestion/assistant', [GestionAssistant::class, 'save'], ['auth', 'acces:assistant']);
 // 2C (E8, E9, N5) : modèles de procédure, administrateur seulement
 // Phase 7, lot 7A : messages de l'équipe (liens WhatsApp ou e-mail, journalisés) et leurs modèles
 $router->get('/gestion/personnes/{id}/message', [GestionMessagesEquipe::class, 'form'], $personnes);

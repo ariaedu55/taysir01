@@ -2,11 +2,18 @@
 
 declare(strict_types=1);
 
-// Assistant IA (docs/assistant-ia.md). Clé et modèle dans .env, jamais dans ce fichier.
+use App\Services\Assistant\Settings;
+
+// L’administration prend la main dès son premier enregistrement. L’environnement sert de réglage initial.
+$stored = Settings::read();
+$key = $stored === null ? env('DEEPSEEK_API_KEY') : $stored['api_key'];
+$mock = (bool) env('ASSISTANT_MOCK', false);
+
 return [
-    'enabled' => (bool) env('ASSISTANT_ENABLED', false) && (env('DEEPSEEK_API_KEY') !== null || (bool) env('ASSISTANT_MOCK', false)),
-    'mock' => (bool) env('ASSISTANT_MOCK', false),
-    'api_key' => env('DEEPSEEK_API_KEY'),
+    'enabled' => $stored === null ? ((bool) env('ASSISTANT_ENABLED', false) && ($key !== null || $mock)) : $key !== null,
+    'mock' => $mock,
+    'api_key' => $key,
+    'key_source' => $key === null ? null : ($stored === null ? 'serveur' : 'administration'),
     'model' => env('DEEPSEEK_MODEL', 'deepseek-flash'),
     'endpoint' => 'https://api.deepseek.com/chat/completions',
     'timeout' => 240,           // secondes ; la recherche approfondie peut enchaîner une vingtaine de recherches

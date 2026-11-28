@@ -59,6 +59,7 @@ final class Access
         'e-mails' => ['admin'],
         'equipe' => ['admin'],
         'journal' => ['admin'],
+        'assistant' => ['admin'],
         'accueil-agence' => ['admin', 'secretaire'],
         'doublons' => ['admin'],
         'finance' => ['admin', 'comptable'],
@@ -144,6 +145,7 @@ final class Access
             'personnes' => 'personnes', 'recherche' => 'gestion', 'modeles' => 'modeles',
             'accueil' => 'accueil-agence', 'doublons' => 'doublons', 'finance' => 'finance', 'messages-modeles' => 'messages-modeles',
             'prospects' => 'prospects', 'pilotage' => 'pilotage', 'exports' => 'exports', 'conservation' => 'conservation',
+            'assistant' => 'assistant',
         ];
 
         return $modules[$segment] ?? 'gestion';
@@ -533,6 +535,7 @@ final class Access
                 ['Journal d’audit', 'lock', '/gestion/journal/', 'journal'],
                 ['Durées de conservation', 'lock', '/gestion/conservation/', 'conservation'],
                 ['E-mails', 'send', '/gestion/e-mails/', 'e-mails'],
+                ['Assistant IA', 'chat', '/gestion/assistant/', 'assistant'],
             ]],
         ];
         $nav = [];

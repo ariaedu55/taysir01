@@ -35,6 +35,7 @@ final class Audit
         'export' => 'Export de données',
         'export_personne' => 'Export des données d’une personne',
         'anonymisation' => 'Fiche anonymisée',
+        'assistant_parametres' => 'Configuration de l’assistant modifiée',
     ];
 
     /** @param array<string, scalar|null> $detail */

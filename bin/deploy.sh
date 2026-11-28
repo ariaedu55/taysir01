@@ -56,8 +56,9 @@ as_site_user mkdir -p storage/{cache,logs,mails,sessions,uploads/requests}
 if [ "$(id -u)" -eq 0 ]; then
     chown -R "$WEB_USER":"$WEB_USER" storage
 fi
-find storage -type d -exec chmod 750 {} +
-find storage -type f ! -name .gitkeep ! -name .htaccess -exec chmod 640 {} +
+# Le stockage des clés conserve ses modes privés (répertoire 0700 et fichiers 0600).
+find storage -path storage/secrets -prune -o -type d -exec chmod 750 {} +
+find storage -path storage/secrets -prune -o -type f ! -name .gitkeep ! -name .htaccess -exec chmod 640 {} +
 
 # 5. OPcache : prise en compte immédiate du nouveau code
 if systemctl list-unit-files --type=service 2>/dev/null | grep -q "^$PHP_FPM_SERVICE"; then

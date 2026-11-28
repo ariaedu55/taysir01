@@ -99,7 +99,7 @@ final class AssistantController extends Controller
                 );
             }
         } catch (Throwable $exception) {
-            $this->log($exception->getMessage(), $started, null, $searches);
+            $this->log('échec (' . (int) $exception->getCode() . ')', $started, null, $searches);
             $this->finish(match (true) {
                 $exception->getCode() === 402 => 'L’assistant est momentanément indisponible. Un conseiller Taysir peut vous répondre : prenez rendez-vous ou écrivez-nous.',
                 $exception->getCode() === 429 => 'L’assistant est très sollicité en ce moment. Réessayez dans quelques instants.',

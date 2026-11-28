@@ -64,7 +64,8 @@ foreach (['uploads', 'sessions', 'mails'] as $dossier) {
 }
 // Mêmes réglages et extensions que ce processus, sur n'importe quelle machine (WAMP, VPS)
 $php = require __DIR__ . '/php-enfant.php';
-$env = array_merge(getenv(), ['TAYSIR_DB' => BASE, 'GESTION_MAQUETTE' => '0', 'AGENDA_RESERVATION_DIRECTE' => '1', 'RDV_LIMITE_IP_HEURE' => '1000', 'RDV_LIMITE_IP_JOUR' => '1000']);
+$env = array_merge(getenv(), ['TAYSIR_DB' => BASE, 'GESTION_MAQUETTE' => '0', 'AGENDA_RESERVATION_DIRECTE' => '1', 'RDV_LIMITE_IP_HEURE' => '1000', 'RDV_LIMITE_IP_JOUR' => '1000',
+    'ASSISTANT_ENABLED' => '0', 'ASSISTANT_MOCK' => '1', 'DEEPSEEK_API_KEY' => 'cle-fictive-environnement']);
 if (isset($options['sql-user']) || isset($options['sql-password'])) {
     $env += ['TAYSIR_DB_USER' => $sqlUser, 'TAYSIR_DB_PASSWORD' => $sqlPassword];
 }
@@ -1277,12 +1278,14 @@ try {
         '/gestion/doublons/' => ['admin'],
         '/gestion/equipe/' => ['admin'],
         '/gestion/journal/' => ['admin'],
+        '/gestion/assistant/' => ['admin'],
         '/gestion/e-mails/' => ['admin'],
         '/gestion/modeles/' => ['admin'],
         '/gestion/modeles/nouveau/' => ['admin'],
         '/gestion/messages-modeles/' => ['admin'],
         '/gestion/pilotage/' => ['admin'],
         '/gestion/conservation/' => ['admin'],
+        '/gestion/assistant/' => ['admin'],
     ];
     // Toute page /gestion/ sans paramètre déclarée dans les routes doit figurer dans la matrice (hors maquette)
     preg_match_all("~router->get\\('(/gestion[^'{]*)'~", (string) file_get_contents($root . '/routes/web.php'), $declarees);
@@ -1346,6 +1349,44 @@ try {
         && str_contains($dashboardPage['body'], 'class="client-workspace"') && str_contains($dashboardPage['body'], $pieceLink)
         && str_contains($nav['client1']->get($detailsPhaseTen)['body'], 'id="piece-' . $nextPieceId . '"')
         && !str_contains($nav['client2']->get('/mon-espace/')['body'], $pieceLink), (string) $dashboardPage['code']);
+
+    $assistantPage = '/gestion/assistant/';
+    $privateSettings = $isole . '/secrets/deepseek.json';
+    $firstKey = 'cle-fictive-premiere-' . bin2hex(random_bytes(8));
+    $newKey = 'cle-fictive-rotation-' . bin2hex(random_bytes(8));
+    $setKey = ['action' => 'save', 'api_key' => $firstKey];
+    $refused = $nav['conseillerA']->post($assistantPage, $setKey);
+    $withoutCsrf = $nav['admin']->post($assistantPage, $setKey, false);
+    $verifier('IA', 'POST réservé à l’administrateur avec jeton CSRF', $refused['code'] === 403
+        && $withoutCsrf['code'] === 419 && !file_exists($privateSettings), $refused['code'] . ' / ' . $withoutCsrf['code']);
+
+    $saved = $nav['admin']->post($assistantPage, $setKey);
+    $adminSettings = $nav['admin']->get($assistantPage);
+    $assistantHome = $visiteur->get('/');
+    $verifier('IA', 'Clé privée activée à la requête suivante et absente du HTML', $saved['code'] === 303
+        && file_exists($privateSettings) && json_decode(file_get_contents($privateSettings), true)['api_key'] === $firstKey
+        && str_contains($adminSettings['body'], 'Clé enregistrée dans la gestion') && str_contains($assistantHome['body'], 'data-assistant-open')
+        && !str_contains($adminSettings['body'] . $assistantHome['body'] . $saved['body'], $firstKey)
+        && $visiteur->get('/storage/secrets/deepseek.json')['code'] === 404, 'stockage isolé');
+
+    $invalidKey = "valeur invalide\r\n" . bin2hex(random_bytes(8));
+    $nav['admin']->post($assistantPage, ['action' => 'save', 'api_key' => $invalidKey]);
+    $invalidPage = $nav['admin']->get($assistantPage);
+    $verifier('IA', 'Clé mal formée refusée sans affichage ni perte du réglage', str_contains($invalidPage['body'], 'sans espace ni saut de ligne')
+        && !str_contains($invalidPage['body'], 'valeur invalide') && file_exists($privateSettings)
+        && json_decode(file_get_contents($privateSettings), true)['api_key'] === $firstKey, 'validation en place');
+
+    $nav['admin']->post($assistantPage, ['action' => 'save', 'api_key' => $newKey]);
+    $rotation = is_file($privateSettings) ? file_get_contents($privateSettings) : '';
+    $verifier('IA', 'Rotation de la clé, sans copie temporaire conservée', (json_decode($rotation, true)['api_key'] ?? null) === $newKey
+        && !str_contains($rotation, $firstKey) && glob(dirname($privateSettings) . '/deepseek.json.*') === [], 'clé remplacée');
+
+    $nav['admin']->post($assistantPage, ['action' => 'disable']);
+    $disabled = is_file($privateSettings) ? json_decode(file_get_contents($privateSettings), true) : null;
+    $detailsAudit = $db->query("SELECT detail FROM audit_log WHERE action = 'assistant_parametres' ORDER BY id")->fetchAll(PDO::FETCH_COLUMN);
+    $verifier('IA', 'Désactivation prioritaire sur l’environnement, journal sans secret', $disabled === ['api_key' => null]
+        && !str_contains($visiteur->get('/')['body'], 'data-assistant-open') && count($detailsAudit) === 3
+        && !str_contains(implode('', $detailsAudit), $firstKey) && !str_contains(implode('', $detailsAudit), $newKey), 'désactivé');
 
     /* K4 : la maquette répond 404 sans GESTION_MAQUETTE */
     $r = $nav['admin']->get('/gestion/maquette/');

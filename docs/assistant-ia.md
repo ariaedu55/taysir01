@@ -184,3 +184,7 @@ Référence utilisée — [outils web et protocole Chat Completions DeepSeek](ht
 ## Lancement local
 
 Double-cliquer sur `bin/serveur-local.bat` (WAMP doit tourner pour MySQL), puis ouvrir http://127.0.0.1:8080. Fermer la fenêtre arrête le serveur. Un seul serveur à la fois sur le port 8080.
+
+## Clé DeepSeek dans l’administration
+
+Le travail prévu ajoute une page réservée au poste administrateur pour enregistrer, remplacer ou retirer la clé. L’assistant doit lire ce réglage à la requête suivante. La clé doit rester dans un fichier privé hors du dossier public et ne figurer ni dans l’écran, ni dans la session, ni dans le journal. La recette couvre les droits côté serveur, le jeton CSRF, la rotation et la désactivation.
