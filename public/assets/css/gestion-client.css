@@ -277,7 +277,7 @@ body:has(.c-space) .assistant-launcher-label { position: absolute; width: 1px; h
 }
 /* Finition de l'espace client (28/11/2026) : pied de page en bas d'écran, titres homogènes, parcours en trois étapes */
 .client-workspace { display: flex; flex-direction: column; min-height: 100dvh; }
-.client-workspace > main { width: min(76rem, calc(100% - 3rem)); padding-bottom: 2rem; }
+.client-workspace > main { width: min(76rem, calc(100% - 3rem)); margin-inline: auto; padding-bottom: 2rem; }
 .client-workspace .module h3 { color: var(--ink); font: 700 clamp(1rem, 2vw, 1.2rem)/1.3 var(--font-body); }
 .client-empty-lead { margin: .5rem 0 .9rem; color: var(--ink-soft); }
 .client-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin: 0 0 1rem; padding: 0; list-style: none; }
@@ -349,3 +349,7 @@ a.client-row:hover { background: white; box-shadow: var(--client-shadow); }
     .client-row-go { grid-row: 1; grid-column: 3; }
 }
 .client-help .g-icon { flex: none; margin-top: .1rem; }
+/* Sous-titres des cartes (Échéances, Admissions, pièces) : même famille que les titres */
+.client-workspace .account h3 { margin: .9rem 0 .35rem; color: var(--ink); font: 700 .95rem/1.35 var(--font-body); }
+.client-workspace .account h2 + h3, .client-workspace .account li h3 { margin-top: .2rem; }
+.client-workspace > main .client-wrap { width: auto; margin-inline: 0; }

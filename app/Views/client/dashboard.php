@@ -59,12 +59,15 @@ $stats = [
                 </ol>
                 <?php if ($target !== $list . '#nouvelle-titre'): ?><p><a class="button primary" href="<?= e(url($list . '#nouvelle-titre')) ?>">Faire une demande <?= gestion_icone('arrow', 16) ?></a></p><?php endif; ?>
             <?php else: ?>
-                <ul class="request-list">
+                <?php $iconeService = ['admission' => 'compass', 'logement' => 'home', 'visa' => 'doc', 'prise-en-charge' => 'wallet', 'billet' => 'plane', 'hotel' => 'building']; ?>
+                <ul class="client-rows">
                     <?php foreach ($requests as $request): ?>
-                        <li><a class="request-row" href="<?= e(url($list . $request['reference'] . '/')) ?>">
-                            <span class="request-main"><strong><?= e(ServiceRequest::service($request['service'])['title'] ?? 'Demande') ?></strong>
+                        <li><a class="client-row" href="<?= e(url($list . $request['reference'] . '/')) ?>">
+                            <span class="client-icon client-tone-<?= in_array($request['service'], ['billet', 'hotel'], true) ? 'green' : 'blue' ?>"><?= gestion_icone($iconeService[$request['service']] ?? 'folder', 18) ?></span>
+                            <span class="client-row-main"><strong><?= e(ServiceRequest::service($request['service'])['title'] ?? 'Demande') ?></strong>
                                 <span><?= e($request['reference']) ?><?= $request['destination'] ? ' · ' . e($request['destination']) : '' ?></span></span>
                             <?php partial('status', ['label' => ServiceRequest::statusLabel($request['status']), 'tone' => ServiceRequest::statusTone($request['status'])]); ?>
+                            <span class="client-row-go" aria-hidden="true"><?= gestion_icone('chevron', 18) ?></span>
                         </a></li>
                     <?php endforeach; ?>
                 </ul>
